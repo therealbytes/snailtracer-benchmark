@@ -16,10 +16,10 @@ contract SnailTracer {
 
     // SnailTracer is the ray tracer constructor to create the scene and pre-calculate
     // some constants that are the same throughout the path tracing procedure.
-    constructor(int w, int h) {
+    function Init() public {
         // Initialize the image parameters
-        width = w;
-        height = h;
+        width = 1024;
+        height = 768;
 
         // Initialize the rendering parameters
         camera = Ray(
@@ -304,15 +304,10 @@ contract SnailTracer {
     // Benchmark sets up an ephemeral image configuration and traces a select few
     // hand picked pixels to measure EVM execution performance.
     function Benchmark() public returns (bytes1 r, bytes1 g, bytes1 b) {
-        // Configure the scene for benchmarking
-        width = 1024;
-        height = 768;
-
-        deltaX = Vector((width * 513500) / height, 0, 0);
-        deltaY = div(
-            mul(norm(cross(deltaX, camera.direction)), 513500),
-            1000000
-        );
+        if (width == 0) {
+            // Configure the scene for benchmarking
+            Init();
+        }
 
         // Trace a few pixels and collect their colors (sanity check)
         Vector memory color;
@@ -378,7 +373,7 @@ contract SnailTracer {
     }
 
     function intToByte(int x) internal pure returns (bytes1) {
-        return bytes1(bytes32(uint(x)));
+        return bytes1(uint8(uint(x)));
     }
 
     function uint32ToInt(uint32 x) internal pure returns (int) {
