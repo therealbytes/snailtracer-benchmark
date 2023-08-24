@@ -130,16 +130,16 @@ func (t *Triangle) intersect(r *Ray) int {
 type Material int
 
 const (
-	material_diffuse Material = iota
-	material_specular
-	material_refractive
+	DiffuseMaterial Material = iota
+	SpecularMaterial
+	RefractiveMaterial
 )
 
 type Primitive int
 
 const (
 	SpherePrimitive Primitive = iota
-	primitive_triangle
+	TrianglePrimitive
 )
 
 type Scene struct {
@@ -247,7 +247,7 @@ func (s *Scene) radianceSphere(ray *Ray, obj *Sphere, dist int) *Vector {
 	intersect := ray.origin.add(ray.direction.scaleMul(dist).scaleDiv(1000000))
 	normal := intersect.sub(obj.position).norm()
 
-	if obj.reflection == material_diffuse {
+	if obj.reflection == DiffuseMaterial {
 		if normal.dot(ray.direction) >= 0 {
 			normal = normal.scaleMul(-1)
 		}
