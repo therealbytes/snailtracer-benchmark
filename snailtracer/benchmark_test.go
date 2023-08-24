@@ -24,7 +24,7 @@ func TestNativeSnailtracer(b *testing.T) {
 	// color = color.add(s.trace(325, 540, 8)) // Reflective surface mirroring left wall
 	// color = color.add(s.trace(600, 600, 8)) // Refractive surface reflecting right wall
 	// color = color.add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
-	color = color.scaleDiv(4)
+	// color = color.scaleDiv(4)
 
 	b.Log(color)
 }

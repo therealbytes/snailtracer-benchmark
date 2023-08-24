@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import "forge-std/console2.sol";
+
 contract SnailTracer {
     // Image properties for the path tracer
     int width; // Width of the image being generated, fixed for life
@@ -288,7 +290,7 @@ contract SnailTracer {
     // RGB pixel value array containing all the data top-down, left-to-right. This
     // method should only be callsed for very small images and SPP values as the
     // cumulative gas and memory costs can push the EVM too hard.
-    function TraceImage(int spp) public  returns (bytes memory) {
+    function TraceImage(int spp) public returns (bytes memory) {
         for (int y = height - 1; y >= 0; y--) {
             for (int x = 0; x < width; x++) {
                 Vector memory color = trace(x, y, spp);
@@ -304,19 +306,34 @@ contract SnailTracer {
     // Benchmark sets up an ephemeral image configuration and traces a select few
     // hand picked pixels to measure EVM execution performance.
     function Benchmark() public returns (bytes1 r, bytes1 g, bytes1 b) {
+        console2.log("(Benchmark) Starting benchmark");
         if (width == 0) {
             // Configure the scene for benchmarking
+            console2.log("(Benchmark) Initializing scene");
             Init();
         }
+
+        console2.log("(Benchmark) Width:", width);
+        console2.log("(Benchmark) Height:", height);
+
+        console2.log("(Benchmark) Camera X:", camera.origin.x);
+        console2.log("(Benchmark) Camera Y:", camera.origin.y);
+
+        console2.log("(Benchmark) Spheres:", spheres.length);
+        console2.log("(Benchmark) Triangles:", triangles.length);
 
         // Trace a few pixels and collect their colors (sanity check)
         Vector memory color;
 
-        color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
-        color = add(color, trace(325, 540, 8)); // Reflective surface mirroring left wall
+        console2.log("(Benchmark) Tracing pixel 1");
+        color = add(color, trace(512, 384, 1)); // Flat diffuse surface, opposite wall
+        console2.log("(Benchmark) Color:");
+        console2.log(uint(color.x), uint(color.y), uint256(color.z));
+        // color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
+        // color = add(color, trace(325, 540, 8)); // Reflective surface mirroring left wall
         // color = add(color, trace(600, 600, 8)); // Refractive surface reflecting right wall
         // color = add(color, trace(522, 524, 8)); // Reflective surface mirroring the refractive surface reflecting the light
-        color = div(color, 4);
+        // color = div(color, 4);
 
         return (intToByte(color.x), intToByte(color.y), intToByte(color.z));
     }
@@ -328,10 +345,14 @@ contract SnailTracer {
         int y,
         int spp
     ) internal returns (Vector memory color) {
+        console2.log("(trace) Tracing pixel:");
+        console2.log(uint(x), uint(y));
         seed = uint32(uint((y * width + x))); // Deterministic image irrelevant of render chunks
+        console2.log("(trace) Set seed to", seed);
 
         delete (color);
         for (int k = 0; k < spp; k++) {
+            console2.log("(trace) Sample", k);
             Vector memory pixel = add(
                 div(
                     add(
@@ -359,7 +380,16 @@ contract SnailTracer {
                 false
             );
 
-            color = add(color, div(radiance(ray), spp));
+            Vector memory rad = radiance(ray);
+
+            console2.log("(trace) Color:");
+            console2.log(uint(color.x), uint(color.y), uint(color.z));
+            console2.log("(trace) Radiance:");
+            console2.log(uint(rad.x), uint(rad.y), uint(rad.z));
+
+            color = add(color, div(rad, spp));
+            // console2.log("(trace) Updated color with sample:");
+            // console2.log(uint(color.x), uint(color.y), uint256(color.z));
         }
         return div(mul(clamp(color), 255), 1000000);
     }
@@ -546,7 +576,10 @@ contract SnailTracer {
 
     // intersect calculates the intersection of a ray with a sphere, returning the
     // distance till the first intersection point or zero in case of no intersection.
-    function intersect(Sphere memory s, Ray memory r) internal pure returns (int) {
+    function intersect(
+        Sphere memory s,
+        Ray memory r
+    ) internal pure returns (int) {
         Vector memory op = sub(s.position, r.origin);
 
         int b = dot(op, r.direction) / 1000000;
@@ -567,7 +600,10 @@ contract SnailTracer {
         return 0;
     }
 
-    function intersect(Triangle memory t, Ray memory r) internal pure returns (int) {
+    function intersect(
+        Triangle memory t,
+        Ray memory r
+    ) internal pure returns (int) {
         Vector memory e1 = sub(t.b, t.a);
         Vector memory e2 = sub(t.c, t.a);
 
@@ -823,7 +859,9 @@ contract SnailTracer {
 
     // traceray calculates the intersection of a ray with all the objects and
     // returns the closest one.
-    function traceray(Ray memory ray) internal view returns (int, Primitive, uint) {
+    function traceray(
+        Ray memory ray
+    ) internal view returns (int, Primitive, uint) {
         int dist = 0;
         Primitive p;
         uint id;
