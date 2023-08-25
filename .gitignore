@@ -12,3 +12,6 @@ docs/
 
 # Dotenv file
 .env
+
+# Bytecode
+snailtracer/testdata/bytecode.txt
