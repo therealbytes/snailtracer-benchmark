@@ -306,29 +306,15 @@ contract SnailTracer {
     // Benchmark sets up an ephemeral image configuration and traces a select few
     // hand picked pixels to measure EVM execution performance.
     function Benchmark() public returns (bytes1 r, bytes1 g, bytes1 b) {
-        console2.log("(Benchmark) Starting benchmark");
         if (width == 0) {
             // Configure the scene for benchmarking
-            console2.log("(Benchmark) Initializing scene");
             Init();
         }
-
-        console2.log("(Benchmark) Width:", width);
-        console2.log("(Benchmark) Height:", height);
-
-        console2.log("(Benchmark) Camera X:", camera.origin.x);
-        console2.log("(Benchmark) Camera Y:", camera.origin.y);
-
-        console2.log("(Benchmark) Spheres:", spheres.length);
-        console2.log("(Benchmark) Triangles:", triangles.length);
 
         // Trace a few pixels and collect their colors (sanity check)
         Vector memory color;
 
-        console2.log("(Benchmark) Tracing pixel 1");
-        color = add(color, trace(512, 384, 1)); // Flat diffuse surface, opposite wall
-        console2.log("(Benchmark) Color:");
-        console2.log(uint(color.x), uint(color.y), uint256(color.z));
+        color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
         // color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
         // color = add(color, trace(325, 540, 8)); // Reflective surface mirroring left wall
         // color = add(color, trace(600, 600, 8)); // Refractive surface reflecting right wall
@@ -345,28 +331,20 @@ contract SnailTracer {
         int y,
         int spp
     ) internal returns (Vector memory color) {
-        console2.log("(trace) Tracing pixel:");
-        console2.log(uint(x), uint(y));
         seed = uint32(uint((y * width + x))); // Deterministic image irrelevant of render chunks
-        console2.log("(trace) Set seed to", seed);
 
         delete (color);
         for (int k = 0; k < spp; k++) {
-            console2.log("(trace) Sample", k);
             Vector memory pixel = add(
                 div(
                     add(
                         mul(
                             deltaX,
-                            (1000000 * x + uint32ToInt(rand() % 500000)) /
-                                width -
-                                500000
+                            (1000000 * x + (rand() % 500000)) / width - 500000
                         ),
                         mul(
                             deltaY,
-                            (1000000 * y + uint32ToInt(rand() % 500000)) /
-                                height -
-                                500000
+                            (1000000 * y + (rand() % 500000)) / height - 500000
                         )
                     ),
                     1000000
@@ -382,14 +360,7 @@ contract SnailTracer {
 
             Vector memory rad = radiance(ray);
 
-            console2.log("(trace) Color:");
-            console2.log(uint(color.x), uint(color.y), uint(color.z));
-            console2.log("(trace) Radiance:");
-            console2.log(uint(rad.x), uint(rad.y), uint(rad.z));
-
             color = add(color, div(rad, spp));
-            // console2.log("(trace) Updated color with sample:");
-            // console2.log(uint(color.x), uint(color.y), uint256(color.z));
         }
         return div(mul(clamp(color), 255), 1000000);
     }
@@ -397,9 +368,9 @@ contract SnailTracer {
     // Trivial linear congruential pseudo-random number generator
     uint32 seed;
 
-    function rand() internal returns (uint32) {
+    function rand() internal returns (int) {
         seed = uint32(1103515245 * uint(seed) + 12345);
-        return seed;
+        return uint32ToInt(seed);
     }
 
     function intToByte(int x) internal pure returns (bytes1) {
@@ -666,6 +637,7 @@ contract SnailTracer {
         // After a number of reflections, randomly stop radiance calculation
         int ref = 1;
         if (color.z > ref) {
+            // TODO: Shouldn't this be color.x?
             ref = color.z;
         }
         if (color.y > ref) {
@@ -676,7 +648,7 @@ contract SnailTracer {
         }
         ray.depth++;
         if (ray.depth > 5) {
-            if (uint32ToInt(rand() % 1000000) < ref) {
+            if (rand() % 1000000 < ref) {
                 color = div(mul(color, 1000000), ref);
             } else {
                 return emission;
@@ -753,8 +725,8 @@ contract SnailTracer {
         Vector memory normal
     ) internal returns (Vector memory) {
         // Generate a random angle and distance from center
-        int r1 = (int(6283184) * uint32ToInt(rand() % 1000000)) / 1000000;
-        int r2 = uint32ToInt(rand() % 1000000);
+        int r1 = ((int(6283184) * rand()) % 1000000) / 1000000;
+        int r2 = rand() % 1000000;
         int r2s = sqrt(r2) * 1000;
 
         // Create orthonormal coordinate frame
@@ -838,7 +810,7 @@ contract SnailTracer {
             );
             return div(refraction, 1000000);
         }
-        if (uint32ToInt(rand() % 1000000) < 250000 + re / 2) {
+        if (rand() % 1000000 < 250000 + re / 2) {
             return
                 div(
                     mul(specular(ray, _intersect, normal), re),
