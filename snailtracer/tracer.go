@@ -1,5 +1,10 @@
 package snailtracer
 
+import (
+	"image"
+	imageColor "image/color"
+)
+
 type Vector struct {
 	x, y, z int
 }
@@ -356,6 +361,17 @@ func (s *Scene) traceRay(ray *Ray) (int, Primitive, int) {
 
 func (s *Scene) TracePixel(x, y, spp int) *Vector {
 	return s.trace(x, y, spp)
+}
+
+func (s *Scene) TraceArea(x0, y0, w, h, spp int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			color := s.TracePixel(x0+x, y0+y, spp).clamp()
+			img.Set(x, y, imageColor.RGBA{R: byte(color.x), G: byte(color.y), B: byte(color.z), A: 255})
+		}
+	}
+	return img
 }
 
 func NewBenchmarkScene() *Scene {
