@@ -17,10 +17,9 @@ func TestNativeSnailtracer(b *testing.T) {
 	s := NewBenchmarkScene()
 
 	// Trace a few pixels and collect their colors (sanity check)
-	color := &Vector{0, 0, 0}
+	color := NewVector(0, 0, 0)
 
-	color = color.add(s.trace(512, 384, 1)) // Flat diffuse surface, opposite wall
-	// color = color.add(s.trace(512, 384, 8)) // Flat diffuse surface, opposite wall
+	color = color.Add(s.trace(512, 384, 8)) // Flat diffuse surface, opposite wall
 	// color = color.add(s.trace(325, 540, 8)) // Reflective surface mirroring left wall
 	// color = color.add(s.trace(600, 600, 8)) // Refractive surface reflecting right wall
 	// color = color.add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
@@ -42,15 +41,15 @@ func TestEVMSnailtracer(b *testing.T) {
 		gasLimit       = uint64(1e8)
 		txContext      = vm.TxContext{
 			Origin:   origin,
-			GasPrice: big.NewInt(1),
+			GasPrice: common.Big1,
 		}
 		context = vm.BlockContext{
 			CanTransfer: core.CanTransfer,
 			Transfer:    core.Transfer,
 			Coinbase:    common.Address{},
-			BlockNumber: big.NewInt(1),
+			BlockNumber: common.Big1,
 			Time:        1,
-			Difficulty:  big.NewInt(1),
+			Difficulty:  common.Big1,
 			GasLimit:    uint64(1e8),
 		}
 	)

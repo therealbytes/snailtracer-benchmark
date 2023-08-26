@@ -3,131 +3,86 @@ package snailtracer
 import (
 	"image"
 	imageColor "image/color"
+	"math/big"
 )
 
-type Vector struct {
-	x, y, z int
-}
-
-func (v *Vector) add(u *Vector) *Vector {
-	return &Vector{v.x + u.x, v.y + u.y, v.z + u.z}
-}
-
-func (v *Vector) sub(u *Vector) *Vector {
-	return &Vector{v.x - u.x, v.y - u.y, v.z - u.z}
-}
-
-func (v *Vector) scaleMul(m int) *Vector {
-	return &Vector{m * v.x, m * v.y, m * v.z}
-}
-
-func (v *Vector) mul(u *Vector) *Vector {
-	return &Vector{v.x * u.x, v.y * u.y, v.z * u.z}
-}
-
-func (v *Vector) scaleDiv(d int) *Vector {
-	return &Vector{v.x / d, v.y / d, v.z / d}
-}
-
-func (v *Vector) dot(u *Vector) int {
-	return v.x*u.x + v.y*u.y + v.z*u.z
-}
-
-func (v *Vector) cross(u *Vector) *Vector {
-	return &Vector{
-		x: v.y*u.z - v.z*u.y,
-		y: v.z*u.x - v.x*u.z,
-		z: v.x*u.y - v.y*u.x,
-	}
-}
-
-func (v *Vector) norm() *Vector {
-	length := sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
-	return &Vector{
-		x: v.x * 1000000 / length,
-		y: v.y * 1000000 / length,
-		z: v.z * 1000000 / length,
-	}
-}
-
-func (v *Vector) clamp() *Vector {
-	return &Vector{
-		x: clamp(v.x),
-		y: clamp(v.y),
-		z: clamp(v.z),
-	}
-}
-
 type Ray struct {
-	origin, direction *Vector
+	origin, direction Vector
 	depth             int
 	refract           bool
 }
 
 type Sphere struct {
-	radius     int
-	position   *Vector
-	emission   *Vector
-	color      *Vector
+	radius     *big.Int
+	position   Vector
+	emission   Vector
+	color      Vector
 	reflection Material
 }
 
-func (s *Sphere) intersect(r *Ray) int {
-	op := s.position.sub(r.origin)
+func (s *Sphere) intersect(r *Ray) *big.Int {
+	op := s.position.Sub(r.origin)
+	b := new(big.Int).Div(op.Dot(r.direction), Big1e6)
 
-	b := op.dot(r.direction) / 1000000
-	det := b*b - op.dot(op) + s.radius*s.radius
+	bSq := new(big.Int).Mul(b, b)
+	rSq := new(big.Int).Mul(s.radius, s.radius)
+	sSq := new(big.Int).Add(rSq, bSq)
+	det := new(big.Int).Sub(sSq, op.Dot(op))
 
-	if det < 0 {
-		return 0
+	if det.Cmp(Big0) < 0 {
+		return Big0
 	}
 
-	det = sqrt(det)
-	if b-det > 1000 {
-		return b - det
+	detSqrt := Sqrt(det)
+
+	bMinusDetSqrt := new(big.Int).Sub(b, detSqrt)
+	bPlusDetSqrt := new(big.Int).Add(b, detSqrt)
+
+	if bMinusDetSqrt.Cmp(Big1e3) > 0 {
+		return bMinusDetSqrt
 	}
-	if b+det > 1000 {
-		return b + det
+	if bPlusDetSqrt.Cmp(Big1e3) > 0 {
+		return bPlusDetSqrt
 	}
-	return 0
+	return NewBig0()
 }
 
 type Triangle struct {
-	a, b, c    *Vector
-	normal     *Vector
-	emission   *Vector
-	color      *Vector
+	a, b, c    Vector
+	normal     Vector
+	emission   Vector
+	color      Vector
 	reflection Material
 }
 
-func (t *Triangle) intersect(r *Ray) int {
-	e1 := t.b.sub(t.a)
-	e2 := t.c.sub(t.a)
+func (t *Triangle) intersect(r *Ray) *big.Int {
+	e1 := t.b.Sub(t.a)
+	e2 := t.c.Sub(t.a)
+	p := e1.Cross(e2)
 
-	p := e1.cross(e2)
-
-	det := e1.dot(p) / 1000000
-	if det > -1000 && det < 1000 {
-		return 0
+	det := new(big.Int).Div(e1.Dot(p), Big1e6)
+	if det.Cmp(new(big.Int).Neg(Big1e3)) > -1 && det.Cmp(Big1e3) < 1 {
+		return NewBig0()
 	}
 
-	d := r.origin.sub(t.a)
+	d := r.origin.Sub(t.a)
+	u := new(big.Int).Div(d.Dot(p), det)
 
-	u := d.dot(p) / det
-	if u < 0 || u > 1000000 {
-		return 0
+	if u.Cmp(Big0) < 0 || u.Cmp(Big1e6) > 0 {
+		return NewBig0()
 	}
 
-	q := d.cross(e1)
+	q := d.Cross(e1)
+	v := new(big.Int).Div(r.direction.Dot(q), det)
 
-	v := r.direction.dot(q) / det
-	if v < 0 || u+v > 1000000 {
-		return 0
+	if v.Cmp(Big0) < 0 || new(big.Int).Add(u, v).Cmp(Big1e6) > 0 {
+		return NewBig0()
 	}
 
-	dist := e2.dot(q) / det
-	if dist < 1000 {
-		return 0
+	dist := new(big.Int).Div(e2.Dot(q), det)
+
+	if dist.Cmp(Big1e3) < 0 {
+		return NewBig0()
 	}
 	return dist
 }
@@ -148,10 +103,10 @@ const (
 )
 
 type Scene struct {
-	seed           int
+	seed           uint32
 	width, height  int
 	camera         *Ray
-	deltaX, deltaY *Vector
+	deltaX, deltaY Vector
 	spheres        []*Sphere
 	triangles      []*Triangle
 }
@@ -160,51 +115,45 @@ func newScene(w, h int) *Scene {
 	s := &Scene{}
 	s.width = w
 	s.height = h
-	s.camera = &Ray{
-		origin:    &Vector{50000000, 52000000, 295600000},
-		direction: (&Vector{0, -42612, -1000000}).norm(),
-	}
-	s.deltaX = &Vector{int(s.width * 513500 / s.height), 0, 0}
-	s.deltaY = s.deltaX.cross(s.camera.direction).norm().scaleMul(513500).scaleDiv(1000000)
 	return s
 }
 
-func (s *Scene) rand() int {
-	s.seed = 1103515245*s.seed + 12345
-	return s.seed
+func (s *Scene) rand() *big.Int {
+	s.seed = s.seed*1103515245 + 12345
+	return big.NewInt(int64(s.seed))
 }
 
-func (s *Scene) trace(x, y, spp int) *Vector {
-	s.seed = int(uint32(y*s.width + x))
-
-	color := &Vector{0, 0, 0}
+func (s *Scene) trace(x, y, spp int) Vector {
+	s.seed = uint32(y*s.width + x)
+	color := NewVector(0, 0, 0)
 
 	for k := 0; k < spp; k++ {
-		pixel := s.deltaX.scaleMul((1000000*x+s.rand()%500000)/s.width - 500000).
-			add(s.deltaY.scaleMul((1000000*y+s.rand()%500000)/s.height - 500000)).
-			scaleDiv(1000000).
-			add(s.camera.direction)
+		pixel := s.deltaX.ScaleMul(new(big.Int).Add(new(big.Int).Mul(Big1e6, big.NewInt(int64(x))), new(big.Int).Rem(s.rand(), big.NewInt(500000))).Div(big.NewInt(int64(s.width)), big.NewInt(500000))).
+			Add(s.deltaY.ScaleMul(new(big.Int).Add(new(big.Int).Mul(Big1e6, big.NewInt(int64(y))), new(big.Int).Rem(s.rand(), big.NewInt(500000))).Div(big.NewInt(int64(s.height)), big.NewInt(500000))).
+				ScaleDiv(Big1e6).
+				Add(s.camera.direction))
 		ray := &Ray{
-			origin:    s.camera.origin.add(pixel.scaleMul(140)),
-			direction: pixel.norm(),
+			origin:    s.camera.origin.Add(pixel.ScaleMul(big.NewInt(140))),
+			direction: pixel.Norm(),
 		}
 
-		color = color.add(s.radiance(ray).scaleDiv(spp))
+		color = color.Add(s.radiance(ray).ScaleDiv(big.NewInt(int64(spp))))
 	}
 
-	return color.clamp().scaleMul(255).scaleDiv(1000000)
+	return color.Clamp().ScaleMul(big.NewInt(255)).ScaleDiv(Big1e6)
 }
 
-func (s *Scene) radiance(ray *Ray) *Vector {
+func (s *Scene) radiance(ray *Ray) Vector {
 	if ray.depth > 10 {
-		return &Vector{0, 0, 0}
-	}
-	dist, p, id := s.traceRay(ray)
-	if dist == 0 {
-		return &Vector{0, 0, 0}
+		return NewVector(0, 0, 0)
 	}
 
-	var color, emission *Vector
+	dist, p, id := s.traceRay(ray)
+	if dist.Cmp(Big0) == 0 {
+		return NewVector(0, 0, 0)
+	}
+
+	var color, emission Vector
 	var sphere *Sphere
 	var triangle *Triangle
 
@@ -218,140 +167,163 @@ func (s *Scene) radiance(ray *Ray) *Vector {
 		emission = triangle.emission
 	}
 
-	ref := 1
-	if color.z > ref {
+	ref := Big1
+	if color.z.Cmp(ref) > 0 {
 		ref = color.z
 	}
-	if color.y > ref {
+	if color.y.Cmp(ref) > 0 {
 		ref = color.y
 	}
-	if color.z > ref {
+	if color.z.Cmp(ref) > 0 {
 		ref = color.z
 	}
 
 	ray.depth++
 	if ray.depth > 5 {
-		if s.rand()%1000000 < ref {
-			color = color.scaleMul(1000000).scaleDiv(ref)
+		if s.rand().Cmp(ref) < 0 {
+			color = color.ScaleMul(Big1e6).ScaleDiv(ref)
 		} else {
 			return emission
 		}
 	}
 
-	var result *Vector
+	var result Vector
 	if p == SpherePrimitive {
 		result = s.radianceSphere(ray, sphere, dist)
 	} else {
 		result = s.radianceTriangle(ray, triangle, dist)
 	}
-
-	return emission.add(color.mul(result).scaleDiv(1000000))
+	return emission.Add(color.Mul(result).ScaleDiv(Big1e6))
 }
 
-func (s *Scene) radianceSphere(ray *Ray, obj *Sphere, dist int) *Vector {
-	intersect := ray.origin.add(ray.direction.scaleMul(dist).scaleDiv(1000000))
-	normal := intersect.sub(obj.position).norm()
+func (s *Scene) radianceSphere(ray *Ray, obj *Sphere, dist *big.Int) Vector {
+	intersect := ray.origin.Add(ray.direction.ScaleMul(dist).ScaleDiv(Big1e6))
+	normal := intersect.Sub(obj.position).Norm()
 
 	if obj.reflection == DiffuseMaterial {
-		if normal.dot(ray.direction) >= 0 {
-			normal = normal.scaleMul(-1)
+		if normal.Dot(ray.direction).Cmp(Big0) >= 0 {
+			normal = normal.ScaleMul(BigNeg1)
 		}
 		return s.diffuse(ray, intersect, normal)
 	}
 	return s.specular(ray, intersect, normal)
 }
 
-func (s *Scene) radianceTriangle(ray *Ray, obj *Triangle, dist int) *Vector {
-	intersect := ray.origin.add(ray.direction.scaleMul(dist).scaleDiv(1000000))
+func (s *Scene) radianceTriangle(ray *Ray, obj *Triangle, dist *big.Int) Vector {
+	intersect := ray.origin.Add(ray.direction.ScaleMul(dist).ScaleDiv(Big1e6))
 
-	nnt := 666666
+	nnt := big.NewInt(666666)
 	if ray.refract {
-		nnt = 1500000
+		nnt = big.NewInt(1500000)
 	}
-	ddn := obj.normal.dot(ray.direction) / 1000000
-	if ddn >= 0 {
-		ddn = -ddn
+	ddn := new(big.Int).Div(obj.normal.Dot(ray.direction), Big1e6)
+	if ddn.Cmp(Big0) >= 0 {
+		ddn = new(big.Int).Neg(ddn)
 	}
-	cos2t := 1000000000000 - nnt*nnt*(1000000000000-ddn*ddn)/1000000000000
-	if cos2t < 0 {
+	cos2t := new(big.Int).Sub(Big1e12, new(big.Int).Div(new(big.Int).Mul(new(big.Int).Mul(nnt, nnt), new(big.Int).Sub(Big1e12, new(big.Int).Mul(ddn, ddn))), Big1e12))
+	if cos2t.Cmp(Big0) < 0 {
 		return s.specular(ray, intersect, obj.normal)
 	}
 	return s.refractive(ray, intersect, obj.normal, nnt, ddn, cos2t)
 }
 
-func (s *Scene) diffuse(ray *Ray, intersect, normal *Vector) *Vector {
-	r1 := 6283184 * (s.rand() % 1000000) / 1000000
-	r2 := s.rand() % 1000000
-	r2s := sqrt(r2) * 1000
+func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
+	r1 := big.NewInt(6283184)
+	r1.Mul(r1, new(big.Int).Mod(s.rand(), Big1e6))
+	r1.Div(r1, Big1e6)
 
-	var u *Vector
-	if abs(normal.x) > 100000 {
-		u = &Vector{0, 1000000, 0}
+	r2 := new(big.Int).Mod(s.rand(), Big1e6)
+	r2s := Sqrt(new(big.Int).Mul(r2, Big1e3))
+
+	var u Vector
+	if Abs(normal.x).Cmp(Big1e6) == 1 { // TODO: cmp clarity
+		u = NewVector(0, 1000000, 0)
 	} else {
-		u = &Vector{1000000, 0, 0}
+		u = NewVector(1000000, 0, 0)
 	}
-	u = u.cross(normal).norm()
-	v := normal.cross(u).norm()
+	u = u.Cross(normal).Norm()
+	v := normal.Cross(u).Norm()
 
-	u = u.scaleMul(cos(r1) * r2s / 1000000).
-		add(v.scaleMul(sin(r1) * r2s / 1000000)).
-		add(normal.scaleMul(sqrt(1000000-r2) * 1000)).
-		norm()
+	u1 := u.ScaleMul(new(big.Int).Div(new(big.Int).Mul(Cos(r1), r2s), Big1e6))
+	v1 := v.ScaleMul(new(big.Int).Div(new(big.Int).Mul(Sin(r1), r2s), Big1e6))
+	n1 := normal.ScaleMul(new(big.Int).Mul(Sqrt(new(big.Int).Sub(Big1e6, r2)), Big1e3))
+	u = u1.Add(v1).Add(n1).Norm()
+
 	return s.radiance(&Ray{intersect, u, ray.depth, ray.refract})
 }
 
-func (s *Scene) specular(ray *Ray, intersect, normal *Vector) *Vector {
-	reflection := ray.direction.sub(normal.scaleMul(2 * normal.dot(ray.direction) / 1000000)).norm()
+func (s *Scene) specular(ray *Ray, intersect, normal Vector) Vector {
+	d2 := new(big.Int).Mul(Big2, normal.Dot(ray.direction))
+	reflection := ray.direction.Sub(normal.ScaleMul(new(big.Int).Div(d2, Big1e6))).Norm()
 	return s.radiance(&Ray{intersect, reflection, ray.depth, ray.refract})
 }
 
-func (s *Scene) refractive(ray *Ray, intersect, normal *Vector, nnt, ddn, cos2t int) *Vector {
-	sign := -1
+func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *big.Int) Vector {
+	sign := BigNeg1
 	if ray.refract {
-		sign = 1
+		sign.SetInt64(1)
 	}
-	refraction := ray.direction.scaleMul(nnt).
-		sub(normal.scaleMul(sign * (ddn*nnt/1000000 + sqrt(cos2t)))).
-		scaleDiv(1000000).
-		norm()
 
-	c := 1000000 + ddn
+	// Calculate: sign * (ddn * nnt / 1000000 + Sqrt(cos2t))
+	temp := new(big.Int).Mul(ddn, nnt)
+	temp.Div(temp, Big1e6)
+	temp.Add(temp, Sqrt(cos2t)) // Assume Sqrt returns *big.Int
+	temp.Mul(temp, sign)
+
+	refraction := ray.direction.ScaleMul(nnt).
+		Sub(normal.ScaleMul(temp)).
+		ScaleDiv(Big1e6).
+		Norm()
+
+	c := new(big.Int).Add(Big1e6, ddn)
 	if !ray.refract {
-		c = 1000000 - refraction.dot(normal)/1000000
+		c.Sub(Big1e6, refraction.Dot(normal)) // Assume Dot returns *big.Int
+		c.Div(c, Big1e6)
 	}
-	re := 40000 + (1000000-40000)*c*c*c*c*c/1000000000000000/1000000000000000
+
+	temp = new(big.Int).Sub(Big1e6, Big4e5) // 1000000 - 40000
+	temp.Mul(temp, c)                       // Multiply by c
+	temp.Mul(temp, c)                       // Multiply by c
+	temp.Mul(temp, c)                       // Multiply by c
+	temp.Mul(temp, c)                       // Multiply by c
+	temp.Mul(temp, c)                       // Multiply by c
+	temp.Div(temp, Big1e30)                 // Divide by 1e30
+	re := new(big.Int).Add(Big4e5, temp)
 
 	if ray.depth <= 2 {
-		refraction = s.radiance(&Ray{intersect, refraction, ray.depth, !ray.refract}).scaleMul(1000000 - re)
-		refraction = refraction.add(s.specular(ray, intersect, normal).scaleMul(re))
-		return refraction.scaleDiv(1000000)
+		refraction = s.radiance(&Ray{intersect, refraction, ray.depth, !ray.refract}).ScaleMul(new(big.Int).Sub(Big1e6, re))
+		refraction = refraction.Add(s.specular(ray, intersect, normal).ScaleMul(re))
+		return refraction.ScaleDiv(Big1e6)
 	}
-	if s.rand()%1000000 < 250000+re/2 {
-		return s.specular(ray, intersect, normal).scaleMul(re).scaleDiv(250000 + re/2)
+
+	// Replace the use of rand with a big.Int-compatible method
+	if s.rand().Cmp(new(big.Int).Add(big.NewInt(250000), new(big.Int).Div(re, Big2))) < 0 {
+		return s.specular(ray, intersect, normal).ScaleMul(re).ScaleDiv(new(big.Int).Add(big.NewInt(250000), new(big.Int).Div(re, Big2)))
 	}
-	return s.radiance(&Ray{intersect, refraction, ray.depth, !ray.refract}).scaleMul(1000000 - re).scaleDiv(750000 - re/2)
+
+	return s.radiance(&Ray{intersect, refraction, ray.depth, !ray.refract}).ScaleMul(new(big.Int).Sub(Big1e6, re)).ScaleDiv(new(big.Int).Sub(big.NewInt(750000), new(big.Int).Div(re, Big2)))
 }
 
-func (s *Scene) traceRay(ray *Ray) (int, Primitive, int) {
+func (s *Scene) traceRay(ray *Ray) (*big.Int, Primitive, int) {
 	var p Primitive
 	var id int
 
-	dist := 0
+	dist := NewBig0()
 
 	for i := 0; i < len(s.spheres); i++ {
-		d := s.spheres[i].intersect(ray)
-		if d > 0 && (dist == 0 || d < dist) {
-			dist = d
+		d := s.spheres[i].intersect(ray) // Assuming intersect returns *big.Int
+		if d.Cmp(Big0) > 0 && (dist.Cmp(Big0) == 0 || d.Cmp(dist) < 0) {
+			dist.Set(d)
 			p = SpherePrimitive
 			id = i
 		}
 	}
 
 	for i := 0; i < len(s.triangles); i++ {
-		d := s.triangles[i].intersect(ray)
-		if d > 0 && (dist == 0 || d < dist) {
-			dist = d
-			p = SpherePrimitive
+		d := s.triangles[i].intersect(ray) // Assuming intersect returns *big.Int
+		if d.Cmp(Big0) > 0 && (dist.Cmp(Big0) == 0 || d.Cmp(dist) < 0) {
+			dist.Set(d)
+			p = TrianglePrimitive
 			id = i
 		}
 	}
@@ -359,58 +331,17 @@ func (s *Scene) traceRay(ray *Ray) (int, Primitive, int) {
 	return dist, p, id
 }
 
-func (s *Scene) TracePixel(x, y, spp int) *Vector {
-	return s.trace(x, y, spp)
+func (s *Scene) TracePixel(x, y, spp int) imageColor.Color {
+	return s.trace(x, y, spp).Color()
 }
 
 func (s *Scene) TraceArea(x0, y0, w, h, spp int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			color := s.TracePixel(x0+x, y0+y, spp).clamp()
-			img.Set(x, y, imageColor.RGBA{R: byte(color.x), G: byte(color.y), B: byte(color.z), A: 255})
+			pixel := s.TracePixel(x0+x, y0+y, spp)
+			img.Set(x, y, pixel)
 		}
 	}
 	return img
-}
-
-func NewBenchmarkScene() *Scene {
-	s := newScene(1024, 768)
-
-	s.deltaX = &Vector{s.width * 513500 / s.height, 0, 0}
-	s.deltaY = s.deltaX.cross(s.camera.direction).norm().scaleMul(513500).scaleDiv(1000000)
-
-	s.spheres = []*Sphere{
-		{100000000000, &Vector{100001000000, 40800000, 81600000}, &Vector{0, 0, 0}, &Vector{750000, 250000, 250000}, DiffuseMaterial},
-		{100000000000, &Vector{-99901000000, 40800000, 81600000}, &Vector{0, 0, 0}, &Vector{250000, 250000, 750000}, DiffuseMaterial},
-		{100000000000, &Vector{50000000, 40800000, 100000000000}, &Vector{0, 0, 0}, &Vector{750000, 750000, 750000}, DiffuseMaterial},
-		{100000000000, &Vector{50000000, 40800000, -99830000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, DiffuseMaterial},
-		{100000000000, &Vector{50000000, 100000000000, 81600000}, &Vector{0, 0, 0}, &Vector{750000, 750000, 750000}, DiffuseMaterial},
-		{100000000000, &Vector{50000000, -99918400000, 81600000}, &Vector{0, 0, 0}, &Vector{750000, 750000, 750000}, DiffuseMaterial},
-		{16500000, &Vector{27000000, 16500000, 47000000}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{600000000, &Vector{50000000, 681330000, 81600000}, &Vector{12000000, 12000000, 12000000}, &Vector{0, 0, 0}, DiffuseMaterial},
-	}
-
-	s.triangles = []*Triangle{
-		{&Vector{56500000, 25740000, 78000000}, &Vector{73000000, 25740000, 94500000}, &Vector{73000000, 49500000, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 23760000, 78000000}, &Vector{73000000, 0, 78000000}, &Vector{73000000, 23760000, 94500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{89500000, 25740000, 78000000}, &Vector{73000000, 49500000, 78000000}, &Vector{73000000, 25740000, 94500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{89500000, 23760000, 78000000}, &Vector{73000000, 23760000, 94500000}, &Vector{73000000, 0, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 25740000, 78000000}, &Vector{73000000, 49500000, 78000000}, &Vector{73000000, 25740000, 61500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 23760000, 78000000}, &Vector{73000000, 23760000, 61500000}, &Vector{73000000, 0, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{89500000, 25740000, 78000000}, &Vector{73000000, 25740000, 61500000}, &Vector{73000000, 49500000, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{89500000, 23760000, 78000000}, &Vector{73000000, 0, 78000000}, &Vector{73000000, 23760000, 61500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 25740000, 78000000}, &Vector{73000000, 25740000, 61500000}, &Vector{89500000, 25740000, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 25740000, 78000000}, &Vector{89500000, 25740000, 78000000}, &Vector{73000000, 25740000, 94500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 23760000, 78000000}, &Vector{89500000, 23760000, 78000000}, &Vector{73000000, 23760000, 61500000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-		{&Vector{56500000, 23760000, 78000000}, &Vector{73000000, 23760000, 94500000}, &Vector{89500000, 23760000, 78000000}, &Vector{0, 0, 0}, &Vector{0, 0, 0}, &Vector{999000, 999000, 999000}, SpecularMaterial},
-	}
-
-	// Calculate all the triangle surface normals
-	for i := range s.triangles {
-		tri := s.triangles[i]
-		tri.normal = tri.b.sub(tri.a).cross(tri.c.sub(tri.a)).norm()
-	}
-
-	return s
 }

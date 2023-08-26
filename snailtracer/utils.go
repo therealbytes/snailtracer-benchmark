@@ -1,59 +1,114 @@
 package snailtracer
 
-func abs(x int) int {
-	if x > 0 {
-		return x
-	}
-	return -x
+import (
+	"math/big"
+)
+
+var (
+	BigNeg1    = big.NewInt(-1)
+	Big0       = big.NewInt(0)
+	Big1       = big.NewInt(1)
+	Big2       = big.NewInt(2)
+	Big1e3     = big.NewInt(1e3)
+	Big4e5     = big.NewInt(40000)
+	Big1e6     = big.NewInt(1e6)
+	Big1e12    = big.NewInt(1e12)
+	Big1e30, _ = new(big.Int).SetString("1000000000000000000000000000000", 10)
+)
+
+func NewBig0() *big.Int {
+	return big.NewInt(0)
 }
 
-func clamp(x int) int {
-	if x < 0 {
-		return 0
-	}
-	if x > 1000000 {
-		return 1000000
-	}
-	return x
+func NewBig1() *big.Int {
+	return big.NewInt(1)
 }
 
-func sqrt(x int) int {
-	if x == 0 {
-		return 0
+func NewBig2() *big.Int {
+	return big.NewInt(2)
+}
+
+func NewBig1e3() *big.Int {
+	return big.NewInt(1000)
+}
+
+func NewBig1e6() *big.Int {
+	return big.NewInt(1000000)
+}
+
+func NewBig1e12() *big.Int {
+	return big.NewInt(1000000000000)
+}
+
+func Abs(x *big.Int) *big.Int {
+	if x.Sign() > 0 {
+		return new(big.Int).Set(x)
 	}
-	z := (x + 1) / 2
-	y := x
-	for z < y {
-		y = z
-		z = (x/z + z) / 2
+	return new(big.Int).Neg(x)
+}
+
+func Clamp(x *big.Int) *big.Int {
+	if x.Cmp(Big0) < 0 {
+		return NewBig0()
+	}
+	if x.Cmp(Big1e6) > 0 {
+		return NewBig1e6()
+	}
+	return new(big.Int).Set(x)
+}
+
+func Sqrt(x *big.Int) *big.Int {
+	if x.Sign() == 0 {
+		return NewBig0()
+	}
+	z := new(big.Int).Add(x, Big1)
+	z.Div(z, Big2)
+	y := new(big.Int).Set(x)
+	for z.Cmp(y) < 0 {
+		y.Set(z)
+		z.Add(z, new(big.Int).Div(x, z))
+		z.Div(z, Big2)
 	}
 	return y
 }
 
-func sin(x int) int {
-	for x < 0 {
-		x += 6283184
+func Sin(x *big.Int) *big.Int {
+	constant := big.NewInt(6283184)
+	for x.Sign() < 0 {
+		x.Add(x, constant)
 	}
-	for x >= 6283184 {
-		x -= 6283184
+	for x.Cmp(constant) >= 0 {
+		x.Sub(x, constant)
 	}
 
-	y := 0
-	s := 1
-	n := x
-	d := 1
-	f := 2
-	for n > d {
-		y += s * n / d
-		n = n * x * x / 1000000 / 1000000
-		d *= f * (f + 1)
-		s *= -1
-		f += 2
+	n := new(big.Int).Set(x)
+	y := NewBig0()
+	s := NewBig1()
+	d := NewBig1()
+	f := NewBig2()
+	for n.Cmp(d) > 0 {
+		t := new(big.Int).Mul(s, n)
+		t.Div(t, d)
+		y.Add(y, t)
+
+		n.Mul(n, x)
+		n.Mul(n, x)
+		n.Div(n, Big1e6)
+		n.Div(n, Big1e6)
+
+		d.Mul(d, f)
+		d.Mul(d, new(big.Int).Add(f, Big1))
+
+		s.Neg(s)
+
+		f.Add(f, Big2)
 	}
 	return y
 }
 
-func cos(x int) int {
-	s := sin(x)
-	return sqrt(1000000000000 - s*s)
+func Cos(x *big.Int) *big.Int {
+	s := Sin(x)
+	sSquared := new(big.Int).Mul(s, s)
+	difference := new(big.Int).Sub(Big1e12, sSquared)
+	return Sqrt(difference)
 }
