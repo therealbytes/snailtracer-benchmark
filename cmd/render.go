@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"log"
 	"os"
@@ -19,72 +20,111 @@ import (
 const (
 	originX  = 0
 	originY  = 0
-	width    = 1024 / 8
-	height   = 768 / 8
-	spp      = 1
+	width    = 1024
+	height   = 768
+	spp      = 64
 	filename = "out.png"
 )
+
+type worker struct {
+	ctx    context.Context
+	id     int
+	scene  *snailtracer.Scene
+	canvas *canvas
+	done   chan int
+}
+
+func (w *worker) renderLine(y int) {
+Loop:
+	for x := originX; x < originX+width; x++ {
+		select {
+		case <-w.ctx.Done():
+			break Loop
+		default:
+			v := w.scene.TracePixel(x, y, spp)
+			w.canvas.set(x, height-(originX+y)-1, v)
+		}
+	}
+	w.done <- w.id
+}
+
+type canvas struct {
+	lock sync.Mutex
+	img  *image.RGBA
+}
+
+func (c *canvas) set(x, y int, v color.Color) {
+	c.lock.Lock()
+	c.img.Set(x, y, v)
+	c.lock.Unlock()
+}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	routines := runtime.NumCPU()
+	if routines > 1 {
+		routines--
+	}
 	if routines > height {
 		routines = height
 	}
 	// routines = 1
-
-	var wg sync.WaitGroup
-	var lock sync.Mutex
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
-		fmt.Println("\nReceived an interrupt, stopping services...")
+		fmt.Println("\nReceived an interrupt, stopping render...")
 		cancel()
 	}()
 
+	doneChan := make(chan int, routines)
+	imgCanvas := &canvas{img: img}
+
+	workers := make([]*worker, routines)
 	for i := 0; i < routines; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			s := snailtracer.NewBenchmarkScene()
-			w := width
-			x0 := originX
-			h := height / routines
-			y0 := originY + i*h
-
-			if i == routines-1 {
-				h = height - i*h
-			}
-
-			start := time.Now()
-
-			fmt.Println("Starting routine", i, "at", x0, y0, "with dimensions", w, h)
-
-			for y := y0; y < y0+h; y++ {
-				for x := x0; x < x0+w; x++ {
-					select {
-					case <-ctx.Done():
-						return
-					default:
-						v := s.TracePixel(x, y, spp)
-						lock.Lock()
-						// fmt.Println("Setting pixel", x, y, "to", v)
-						img.Set(x-originX, y-originY, v)
-						lock.Unlock()
-					}
-				}
-				timeLeft := time.Since(start) / time.Duration(y-y0+1) * time.Duration(h-(y-y0+1))
-				fmt.Printf("%d is %d%% done\n", i, (y+1-y0)*100/h)
-				fmt.Printf("Estimated time left: %s\n", timeLeft)
-			}
-		}(i)
+		workers[i] = &worker{
+			ctx:    ctx,
+			id:     i,
+			scene:  snailtracer.NewBenchmarkScene(),
+			canvas: imgCanvas,
+			done:   doneChan,
+		}
+		go workers[i].renderLine(originY + i)
 	}
 
-	wg.Wait()
+	var wg sync.WaitGroup
+	wg.Add(height)
+
+	nextLine := routines
+	linesRendered := 0
+	startTime := time.Now()
+
+Loop:
+	for id := range doneChan {
+		select {
+		case <-ctx.Done():
+			break Loop
+		default:
+			wg.Done()
+			linesRendered++
+			expectedTimeLeft := time.Since(startTime) / time.Duration(linesRendered) * time.Duration(height-linesRendered)
+			fmt.Println(linesRendered*100/height, "% done -- Expected time left:", expectedTimeLeft.String())
+			if linesRendered == height {
+				break Loop
+			}
+			go workers[id].renderLine(originY + nextLine)
+			nextLine++
+		}
+	}
+
+	select {
+	case <-ctx.Done():
+	default:
+		wg.Wait()
+	}
 
 	file, err := os.Create(filename)
 	if err != nil {
