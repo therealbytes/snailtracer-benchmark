@@ -13,32 +13,41 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func TestNativeSnailtracer(b *testing.T) {
+func validResult(r, g, b int64) bool {
+	return r == 25 && g == 24 && b == 99
+}
+
+func TestNativeSnailtracer(t *testing.T) {
 	s := NewBenchmarkScene()
 
-	// Trace a few pixels and collect their colors (sanity check)
 	color := NewVector(0, 0, 0)
 
 	color = color.Add(s.trace(512, 384, 8)) // Flat diffuse surface, opposite wall
-	// color = color.add(s.trace(325, 540, 8)) // Reflective surface mirroring left wall
-	// color = color.add(s.trace(600, 600, 8)) // Refractive surface reflecting right wall
-	// color = color.add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
-	// color = color.scaleDiv(4)
+	color = color.Add(s.trace(325, 540, 8)) // Reflective surface mirroring left wall
+	color = color.Add(s.trace(600, 600, 8)) // Refractive surface reflecting right wall
+	color = color.Add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
+	color = color.ScaleDiv(big.NewInt(4))
 
-	b.Log(color.x, color.y, color.z)
+	r := color.x.Int64()
+	g := color.y.Int64()
+	b := color.z.Int64()
+
+	if !validResult(r, g, b) {
+		t.Fatal("invalid result:", r, g, b)
+	}
 }
 
 //go:embed testdata/bytecode.txt
 var bytecodeHex []byte
 
-func TestEVMSnailtracer(b *testing.T) {
+func TestEVMSnailtracer(t *testing.T) {
 	var (
 		address        = common.HexToAddress("0xc0ffee")
 		origin         = common.HexToAddress("0xc0ffee0001")
 		bytecode       = common.Hex2Bytes(string(bytecodeHex)[2:])
 		initInput      = common.Hex2Bytes("57a86f7d")
 		benchmarkInput = common.Hex2Bytes("30627b7c")
-		gasLimit       = uint64(1e8)
+		gasLimit       = uint64(1e9)
 		txContext      = vm.TxContext{
 			Origin:   origin,
 			GasPrice: common.Big1,
@@ -56,7 +65,7 @@ func TestEVMSnailtracer(b *testing.T) {
 
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
 	statedb.CreateAccount(address)
@@ -68,17 +77,22 @@ func TestEVMSnailtracer(b *testing.T) {
 	evm := vm.NewEVM(context, txContext, statedb, params.TestChainConfig, vm.Config{})
 
 	var ret []byte
-	var leftoverGas uint64
 
-	ret, leftoverGas, err = evm.Call(vm.AccountRef(origin), address, initInput, gasLimit, common.Big0)
-	b.Log(ret, gasLimit-leftoverGas, err)
+	_, _, err = evm.Call(vm.AccountRef(origin), address, initInput, gasLimit, common.Big0)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
-	ret, leftoverGas, err = evm.Call(vm.AccountRef(origin), address, benchmarkInput, gasLimit, common.Big0)
-	b.Log(ret, gasLimit-leftoverGas, err)
+	ret, _, err = evm.Call(vm.AccountRef(origin), address, benchmarkInput, gasLimit, common.Big0)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
+	}
+
+	r := int64(ret[0])
+	g := int64(ret[32])
+	b := int64(ret[64])
+
+	if !validResult(r, g, b) {
+		t.Fatal("invalid result:", r, g, b)
 	}
 }
