@@ -558,7 +558,7 @@ contract SnailTracer {
         int det = b * b - dot(op, op) + s.radius * s.radius;
 
         // Bail out if ray misses the sphere
-        if (det < 0) {
+        if (det <= 0) {
             return 0;
         }
         // Calculate the closer intersection point

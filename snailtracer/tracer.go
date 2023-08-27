@@ -29,7 +29,7 @@ func (s *Sphere) intersect(r *Ray) *big.Int {
 	sSq := new(big.Int).Add(rSq, bSq)
 	det := new(big.Int).Sub(sSq, op.Dot(op))
 
-	if det.Cmp(Big0) < 0 {
+	if det.Cmp(Big0) <= 0 {
 		return NewBig0()
 	}
 
@@ -221,6 +221,11 @@ func (s *Scene) radianceSphere(ray *Ray, obj *Sphere, dist *big.Int) Vector {
 	intersect := ray.origin.Add(ray.direction.ScaleMul(dist).ScaleDiv(Big1e6))
 	normal := intersect.Sub(obj.position).Norm()
 
+	// fmt.Println("---")
+	// fmt.Println(intersect.x, intersect.y, intersect.z)
+	// fmt.Println(obj.position.x, obj.position.y, obj.position.z)
+	// fmt.Println(normal.x, normal.y, normal.z)
+
 	if obj.reflection == DiffuseMaterial {
 		if normal.Dot(ray.direction).Cmp(Big0) >= 0 {
 			normal = normal.ScaleMul(BigNeg1)
@@ -275,6 +280,11 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 		u = NewVector(1000000, 0, 0)
 	}
 	u = u.Cross(normal).Norm()
+
+	if u.Length().Cmp(Big0) == 0 {
+		return NewVector(0, 0, 0)
+	}
+
 	v := normal.Cross(u).Norm()
 
 	u1 := u.ScaleMul(new(big.Int).Div(new(big.Int).Mul(Cos(r1), r2s), Big1e6))

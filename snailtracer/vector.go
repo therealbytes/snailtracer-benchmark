@@ -80,16 +80,21 @@ func (v Vector) Cross(u Vector) Vector {
 	}
 }
 
-func (v Vector) Norm() Vector {
-	tempX := new(big.Int).Mul(v.x, v.x)
-	tempY := new(big.Int).Mul(v.y, v.y)
-	tempZ := new(big.Int).Mul(v.z, v.z)
-	length := Sqrt(new(big.Int).Add(tempX, new(big.Int).Add(tempY, tempZ)))
+func (v Vector) Length() *big.Int {
+	xSq := new(big.Int).Mul(v.x, v.x)
+	ySq := new(big.Int).Mul(v.y, v.y)
+	zSq := new(big.Int).Mul(v.z, v.z)
+	return Sqrt(new(big.Int).Add(xSq, new(big.Int).Add(ySq, zSq)))
+}
 
+func (v Vector) Norm() Vector {
+	length := v.Length()
+	if length.Cmp(Big0) == 0 {
+		return Vector{NewBig0(), NewBig0(), NewBig0()}
+	}
 	nx := new(big.Int).Div(new(big.Int).Mul(v.x, Big1e6), length)
 	ny := new(big.Int).Div(new(big.Int).Mul(v.y, Big1e6), length)
 	nz := new(big.Int).Div(new(big.Int).Mul(v.z, Big1e6), length)
-
 	return Vector{nx, ny, nz}
 }
 
