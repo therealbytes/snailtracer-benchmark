@@ -59,7 +59,7 @@ type canvas struct {
 
 func (c *canvas) set(x, y int, v color.Color) {
 	c.lock.Lock()
-	c.img.Set(x, height-(originY+y)-1, v)
+	c.img.Set(x-originX, height-(y-originY)-1, v)
 	c.lock.Unlock()
 }
 
