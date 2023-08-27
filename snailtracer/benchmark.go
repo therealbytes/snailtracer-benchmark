@@ -5,8 +5,7 @@ import (
 )
 
 func NewBenchmarkScene() *Scene {
-	s := newScene(1024/2, 768/2)
-	// s := newScene(1024, 768)
+	s := newScene(1024, 768)
 
 	s.camera = &Ray{
 		origin:    NewVector(50000000, 50000000, 295600000),
