@@ -58,15 +58,13 @@ func Clamp(x *big.Int) *big.Int {
 }
 
 func Sqrt(x *big.Int) *big.Int {
-	if x.Sign() == 0 {
-		return NewBig0()
-	}
 	z := new(big.Int).Add(x, Big1)
 	z.Div(z, Big2)
 	y := new(big.Int).Set(x)
 	for z.Cmp(y) < 0 {
 		y.Set(z)
-		z.Add(z, new(big.Int).Div(x, z))
+		z.Div(x, y)
+		z.Add(z, y)
 		z.Div(z, Big2)
 	}
 	return y

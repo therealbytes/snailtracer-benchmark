@@ -81,22 +81,14 @@ func (v Vector) Cross(u Vector) Vector {
 }
 
 func (v Vector) Norm() Vector {
-	// length = Sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
 	tempX := new(big.Int).Mul(v.x, v.x)
 	tempY := new(big.Int).Mul(v.y, v.y)
 	tempZ := new(big.Int).Mul(v.z, v.z)
 	length := Sqrt(new(big.Int).Add(tempX, new(big.Int).Add(tempY, tempZ)))
 
-	million := big.NewInt(1000000)
-
-	// x: v.x * 1000000 / length
-	nx := new(big.Int).Div(new(big.Int).Mul(v.x, million), length)
-
-	// y: v.y * 1000000 / length
-	ny := new(big.Int).Div(new(big.Int).Mul(v.y, million), length)
-
-	// z: v.z * 1000000 / length
-	nz := new(big.Int).Div(new(big.Int).Mul(v.z, million), length)
+	nx := new(big.Int).Div(new(big.Int).Mul(v.x, Big1e6), length)
+	ny := new(big.Int).Div(new(big.Int).Mul(v.y, Big1e6), length)
+	nz := new(big.Int).Div(new(big.Int).Mul(v.z, Big1e6), length)
 
 	return Vector{nx, ny, nz}
 }

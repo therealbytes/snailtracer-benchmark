@@ -1,6 +1,8 @@
 package snailtracer
 
-import "math/big"
+import (
+	"math/big"
+)
 
 func NewBenchmarkScene() *Scene {
 	s := newScene(1024, 768)
@@ -10,7 +12,9 @@ func NewBenchmarkScene() *Scene {
 		direction: (NewVector(0, -42612, -1000000)).Norm(),
 	}
 	s.deltaX = NewVector(s.width*513500/s.height, 0, 0)
-	s.deltaY = s.deltaX.Cross(s.camera.direction).Norm().ScaleMul(big.NewInt(513500)).ScaleDiv(big.NewInt(1000000))
+	s.deltaY = s.deltaX.Cross(s.camera.direction).Norm().
+		ScaleMul(big.NewInt(513500)).
+		ScaleDiv(big.NewInt(1000000))
 
 	s.spheres = []*Sphere{
 		{big.NewInt(100000000000), NewVector(100001000000, 40800000, 81600000), NewVector(0, 0, 0), NewVector(750000, 250000, 250000), DiffuseMaterial},
