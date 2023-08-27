@@ -105,7 +105,13 @@ func main() {
 	linesRendered := 0
 	startTime := time.Now()
 
+Loop:
 	for range doneChan {
+		select {
+		case <-ctx.Done():
+			break Loop
+		default:
+		}
 		linesRendered++
 		expectedTimeLeft := time.Since(startTime) / time.Duration(linesRendered) * time.Duration(height-linesRendered)
 		fmt.Println(linesRendered*100/height, "% done -- Expected time left:", expectedTimeLeft.String())
