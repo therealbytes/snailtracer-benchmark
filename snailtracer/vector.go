@@ -39,9 +39,9 @@ func (v Vector) ScaleMul(m *big.Int) Vector {
 
 func (v Vector) ScaleDiv(d *big.Int) Vector {
 	return Vector{
-		new(big.Int).Div(v.x, d),
-		new(big.Int).Div(v.y, d),
-		new(big.Int).Div(v.z, d),
+		new(big.Int).Quo(v.x, d),
+		new(big.Int).Quo(v.y, d),
+		new(big.Int).Quo(v.z, d),
 	}
 }
 
@@ -92,9 +92,9 @@ func (v Vector) Norm() Vector {
 	if length.Cmp(Big0) == 0 {
 		return Vector{NewBig0(), NewBig0(), NewBig0()}
 	}
-	nx := new(big.Int).Div(new(big.Int).Mul(v.x, Big1e6), length)
-	ny := new(big.Int).Div(new(big.Int).Mul(v.y, Big1e6), length)
-	nz := new(big.Int).Div(new(big.Int).Mul(v.z, Big1e6), length)
+	nx := new(big.Int).Quo(new(big.Int).Mul(v.x, Big1e6), length)
+	ny := new(big.Int).Quo(new(big.Int).Mul(v.y, Big1e6), length)
+	nz := new(big.Int).Quo(new(big.Int).Mul(v.z, Big1e6), length)
 	return Vector{nx, ny, nz}
 }
 

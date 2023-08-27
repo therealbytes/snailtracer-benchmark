@@ -22,7 +22,7 @@ type Sphere struct {
 
 func (s *Sphere) intersect(r *Ray) *big.Int {
 	op := s.position.Sub(r.origin)
-	b := new(big.Int).Div(op.Dot(r.direction), Big1e6)
+	b := new(big.Int).Quo(op.Dot(r.direction), Big1e6)
 
 	bSq := new(big.Int).Mul(b, b)
 	rSq := new(big.Int).Mul(s.radius, s.radius)
@@ -60,26 +60,26 @@ func (t *Triangle) intersect(r *Ray) *big.Int {
 	e2 := t.c.Sub(t.a)
 	p := r.direction.Cross(e2)
 
-	det := new(big.Int).Div(e1.Dot(p), Big1e6)
+	det := new(big.Int).Quo(e1.Dot(p), Big1e6)
 	if det.Cmp(new(big.Int).Neg(Big1e3)) > 0 && det.Cmp(Big1e3) < 0 {
 		return NewBig0()
 	}
 
 	d := r.origin.Sub(t.a)
-	u := new(big.Int).Div(d.Dot(p), det)
+	u := new(big.Int).Quo(d.Dot(p), det)
 
 	if u.Cmp(Big0) < 0 || u.Cmp(Big1e6) > 0 {
 		return NewBig0()
 	}
 
 	q := d.Cross(e1)
-	v := new(big.Int).Div(r.direction.Dot(q), det)
+	v := new(big.Int).Quo(r.direction.Dot(q), det)
 
 	if v.Cmp(Big0) < 0 || new(big.Int).Add(u, v).Cmp(Big1e6) > 0 {
 		return NewBig0()
 	}
 
-	dist := new(big.Int).Div(e2.Dot(q), det)
+	dist := new(big.Int).Quo(e2.Dot(q), det)
 
 	if dist.Cmp(Big1e3) < 0 {
 		return NewBig0()
@@ -130,7 +130,7 @@ func (s *Scene) trace(x, y, spp int) Vector {
 	for k := 0; k < spp; k++ {
 		rdX := s.deltaX.ScaleMul(
 			new(big.Int).Sub(
-				new(big.Int).Div(
+				new(big.Int).Quo(
 					new(big.Int).Add(
 						new(big.Int).Mul(Big1e6, big.NewInt(int64(x))),
 						new(big.Int).Rem(s.rand(), big.NewInt(500000)),
@@ -142,7 +142,7 @@ func (s *Scene) trace(x, y, spp int) Vector {
 		)
 		rdY := s.deltaY.ScaleMul(
 			new(big.Int).Sub(
-				new(big.Int).Div(
+				new(big.Int).Quo(
 					new(big.Int).Add(
 						new(big.Int).Mul(Big1e6, big.NewInt(int64(y))),
 						new(big.Int).Rem(s.rand(), big.NewInt(500000)),
@@ -242,13 +242,13 @@ func (s *Scene) radianceTriangle(ray *Ray, obj *Triangle, dist *big.Int) Vector 
 	if ray.refract {
 		nnt = big.NewInt(1500000)
 	}
-	ddn := new(big.Int).Div(obj.normal.Dot(ray.direction), Big1e6)
+	ddn := new(big.Int).Quo(obj.normal.Dot(ray.direction), Big1e6)
 	if ddn.Cmp(Big0) >= 0 {
 		ddn = new(big.Int).Neg(ddn)
 	}
 	cos2t := new(big.Int).Sub(
 		Big1e12,
-		new(big.Int).Div(
+		new(big.Int).Quo(
 			new(big.Int).Mul(
 				new(big.Int).Mul(nnt, nnt),
 				new(big.Int).Sub(
@@ -268,7 +268,7 @@ func (s *Scene) radianceTriangle(ray *Ray, obj *Triangle, dist *big.Int) Vector 
 func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 	r1 := big.NewInt(6283184)
 	r1.Mul(r1, new(big.Int).Rem(s.rand(), Big1e6))
-	r1.Div(r1, Big1e6)
+	r1.Quo(r1, Big1e6)
 
 	r2 := new(big.Int).Rem(s.rand(), Big1e6)
 	r2s := Sqrt(new(big.Int).Mul(r2, Big1e3))
@@ -287,8 +287,8 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 
 	v := normal.Cross(u).Norm()
 
-	u1 := u.ScaleMul(new(big.Int).Div(new(big.Int).Mul(Cos(r1), r2s), Big1e6))
-	v1 := v.ScaleMul(new(big.Int).Div(new(big.Int).Mul(Sin(r1), r2s), Big1e6))
+	u1 := u.ScaleMul(new(big.Int).Quo(new(big.Int).Mul(Cos(r1), r2s), Big1e6))
+	v1 := v.ScaleMul(new(big.Int).Quo(new(big.Int).Mul(Sin(r1), r2s), Big1e6))
 	n1 := normal.ScaleMul(new(big.Int).Mul(Sqrt(new(big.Int).Sub(Big1e6, r2)), Big1e3))
 	u = u1.Add(v1).Add(n1).Norm()
 
@@ -297,7 +297,7 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 
 func (s *Scene) specular(ray *Ray, intersect, normal Vector) Vector {
 	d2 := new(big.Int).Mul(Big2, normal.Dot(ray.direction))
-	reflection := ray.direction.Sub(normal.ScaleMul(new(big.Int).Div(d2, Big1e6))).Norm()
+	reflection := ray.direction.Sub(normal.ScaleMul(new(big.Int).Quo(d2, Big1e6))).Norm()
 	return s.radiance(&Ray{intersect, reflection, ray.depth, ray.refract})
 }
 
@@ -308,7 +308,7 @@ func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *
 	}
 
 	temp := new(big.Int).Mul(ddn, nnt)
-	temp.Div(temp, Big1e6)
+	temp.Quo(temp, Big1e6)
 	temp.Add(temp, Sqrt(cos2t))
 	temp.Mul(temp, sign)
 
@@ -320,7 +320,7 @@ func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *
 	c := new(big.Int).Add(Big1e6, ddn)
 	if !ray.refract {
 		c.Sub(Big1e6, refraction.Dot(normal))
-		c.Div(c, Big1e6)
+		c.Quo(c, Big1e6)
 	}
 
 	temp = new(big.Int).Sub(Big1e6, Big4e5)
@@ -329,7 +329,7 @@ func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
-	temp.Div(temp, Big1e30)
+	temp.Quo(temp, Big1e30)
 	re := new(big.Int).Add(Big4e5, temp)
 
 	if ray.depth <= 2 {
@@ -338,7 +338,7 @@ func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *
 		return refraction.ScaleDiv(Big1e6)
 	}
 
-	reDiv2 := new(big.Int).Div(re, Big2)
+	reDiv2 := new(big.Int).Quo(re, Big2)
 	threshold := big.NewInt(250000)
 	threshold.Add(threshold, reDiv2)
 

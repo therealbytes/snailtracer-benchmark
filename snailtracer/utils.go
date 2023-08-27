@@ -59,13 +59,13 @@ func Clamp(x *big.Int) *big.Int {
 
 func Sqrt(x *big.Int) *big.Int {
 	z := new(big.Int).Add(x, Big1)
-	z.Div(z, Big2)
+	z.Quo(z, Big2)
 	y := new(big.Int).Set(x)
 	for z.Cmp(y) < 0 {
 		y.Set(z)
-		z.Div(x, y)
+		z.Quo(x, y)
 		z.Add(z, y)
-		z.Div(z, Big2)
+		z.Quo(z, Big2)
 	}
 	return y
 }
@@ -86,13 +86,13 @@ func Sin(x *big.Int) *big.Int {
 	f := NewBig2()
 	for n.Cmp(d) > 0 {
 		t := new(big.Int).Mul(s, n)
-		t.Div(t, d)
+		t.Quo(t, d)
 		y.Add(y, t)
 
 		n.Mul(n, x)
 		n.Mul(n, x)
-		n.Div(n, Big1e6)
-		n.Div(n, Big1e6)
+		n.Quo(n, Big1e6)
+		n.Quo(n, Big1e6)
 
 		d.Mul(d, f)
 		d.Mul(d, new(big.Int).Add(f, Big1))

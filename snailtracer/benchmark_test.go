@@ -25,7 +25,7 @@ func TestNativeSnailtracer(b *testing.T) {
 	// color = color.add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
 	// color = color.scaleDiv(4)
 
-	b.Log(color)
+	b.Log(color.x, color.y, color.z)
 }
 
 //go:embed testdata/bytecode.txt
