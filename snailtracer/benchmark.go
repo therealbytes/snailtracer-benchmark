@@ -5,10 +5,11 @@ import (
 )
 
 func NewBenchmarkScene() *Scene {
-	s := newScene(1024, 768)
+	s := newScene(1024/2, 768/2)
+	// s := newScene(1024, 768)
 
 	s.camera = &Ray{
-		origin:    NewVector(50000000, 52000000, 295600000),
+		origin:    NewVector(50000000, 50000000, 295600000),
 		direction: (NewVector(0, -42612, -1000000)).Norm(),
 	}
 	s.deltaX = NewVector(s.width*513500/s.height, 0, 0)

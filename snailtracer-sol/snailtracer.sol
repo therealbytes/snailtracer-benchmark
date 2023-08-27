@@ -25,7 +25,7 @@ contract SnailTracer {
 
         // Initialize the rendering parameters
         camera = Ray(
-            Vector(50000000, 52000000, 295600000),
+            Vector(50000000, 50000000, 295600000),
             norm(Vector(0, -42612, -1000000)),
             0,
             false

@@ -14,7 +14,7 @@ import (
 )
 
 func validResult(r, g, b int64) bool {
-	return r == 25 && g == 24 && b == 99
+	return r == 19 && g == 19 && b == 90
 }
 
 func TestNativeSnailtracer(t *testing.T) {
