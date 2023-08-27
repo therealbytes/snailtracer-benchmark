@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract SnailTracer {
     // Image properties for the path tracer
@@ -315,11 +315,10 @@ contract SnailTracer {
         Vector memory color;
 
         color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
-        // color = add(color, trace(512, 384, 8)); // Flat diffuse surface, opposite wall
-        // color = add(color, trace(325, 540, 8)); // Reflective surface mirroring left wall
-        // color = add(color, trace(600, 600, 8)); // Refractive surface reflecting right wall
-        // color = add(color, trace(522, 524, 8)); // Reflective surface mirroring the refractive surface reflecting the light
-        // color = div(color, 4);
+        color = add(color, trace(325, 540, 8)); // Reflective surface mirroring left wall
+        color = add(color, trace(600, 600, 8)); // Refractive surface reflecting right wall
+        color = add(color, trace(522, 524, 8)); // Reflective surface mirroring the refractive surface reflecting the light
+        color = div(color, 4);
 
         return (intToByte(color.x), intToByte(color.y), intToByte(color.z));
     }
@@ -750,6 +749,7 @@ contract SnailTracer {
                 mul(normal, sqrt(1000000 - r2) * 1000)
             )
         );
+
         return radiance(Ray(_intersect, u, ray.depth, ray.refract));
     }
 

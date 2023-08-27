@@ -269,7 +269,7 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 	r2s := new(big.Int).Mul(Sqrt(r2), Big1e3)
 
 	var u Vector
-	if Abs(normal.x).Cmp(Big1e6) > 0 {
+	if Abs(normal.x).Cmp(Big1e5) > 0 {
 		u = NewVector(0, 1000000, 0)
 	} else {
 		u = NewVector(1000000, 0, 0)
@@ -314,18 +314,18 @@ func (s *Scene) refractive(ray *Ray, intersect, normal Vector, nnt, ddn, cos2t *
 
 	c := new(big.Int).Add(Big1e6, ddn)
 	if !ray.refract {
-		c.Sub(Big1e6, refraction.Dot(normal))
-		c.Quo(c, Big1e6)
+		c = new(big.Int).Quo(refraction.Dot(normal), Big1e6)
+		c.Sub(Big1e6, c)
 	}
 
-	temp = new(big.Int).Sub(Big1e6, Big4e5)
+	temp = new(big.Int).Sub(Big1e6, Big4e4)
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
 	temp.Mul(temp, c)
 	temp.Quo(temp, Big1e30)
-	re := new(big.Int).Add(Big4e5, temp)
+	re := new(big.Int).Add(Big4e4, temp)
 
 	if ray.depth <= 2 {
 		refraction = s.radiance(&Ray{intersect, refraction, ray.depth, !ray.refract}).ScaleMul(new(big.Int).Sub(Big1e6, re))
