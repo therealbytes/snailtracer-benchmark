@@ -362,6 +362,7 @@ contract SnailTracer {
 
             color = add(color, div(rad, spp));
         }
+
         return div(mul(clamp(color), 255), 1000000);
     }
 
@@ -725,7 +726,7 @@ contract SnailTracer {
         Vector memory normal
     ) internal returns (Vector memory) {
         // Generate a random angle and distance from center
-        int r1 = ((int(6283184) * rand()) % 1000000) / 1000000;
+        int r1 = (int(6283184) * (rand() % 1000000)) / 1000000;
         int r2 = rand() % 1000000;
         int r2s = sqrt(r2) * 1000;
 
