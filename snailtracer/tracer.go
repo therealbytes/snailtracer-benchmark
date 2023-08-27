@@ -276,10 +276,6 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 	}
 	u = u.Cross(normal).Norm()
 
-	if u.Length().Cmp(Big0) == 0 {
-		return NewVector(0, 0, 0)
-	}
-
 	v := normal.Cross(u).Norm()
 
 	u1 := u.ScaleMul(new(big.Int).Quo(new(big.Int).Mul(Cos(r1), r2s), Big1e6))

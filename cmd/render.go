@@ -22,7 +22,7 @@ const (
 	originY  = 0
 	width    = 1024
 	height   = 768
-	spp      = 64
+	spp      = 1
 	filename = "out.png"
 )
 
@@ -35,6 +35,7 @@ type worker struct {
 }
 
 func (w *worker) renderLine(y int) {
+	fmt.Println("Starting worker", w.id, "rendering line", y)
 Loop:
 	for x := originX; x < originX+width; x++ {
 		select {
@@ -42,7 +43,7 @@ Loop:
 			break Loop
 		default:
 			v := w.scene.TracePixel(x, y, spp)
-			w.canvas.set(x, height-(originX+y)-1, v)
+			w.canvas.set(x, y, v)
 		}
 	}
 	w.done <- w.id
@@ -55,7 +56,7 @@ type canvas struct {
 
 func (c *canvas) set(x, y int, v color.Color) {
 	c.lock.Lock()
-	c.img.Set(x, y, v)
+	c.img.Set(x, height-(originY+y)-1, v)
 	c.lock.Unlock()
 }
 
@@ -112,11 +113,13 @@ Loop:
 			linesRendered++
 			expectedTimeLeft := time.Since(startTime) / time.Duration(linesRendered) * time.Duration(height-linesRendered)
 			fmt.Println(linesRendered*100/height, "% done -- Expected time left:", expectedTimeLeft.String())
-			if linesRendered == height {
+
+			if nextLine < height {
+				go workers[id].renderLine(originY + nextLine)
+				nextLine++
+			} else if linesRendered == height {
 				break Loop
 			}
-			go workers[id].renderLine(originY + nextLine)
-			nextLine++
 		}
 	}
 
