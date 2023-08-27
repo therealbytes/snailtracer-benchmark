@@ -31,22 +31,25 @@ type worker struct {
 	id     int
 	scene  *snailtracer.Scene
 	canvas *canvas
+	lines  chan int
 	done   chan int
 }
 
-func (w *worker) renderLine(y int) {
-	fmt.Println("Starting worker", w.id, "rendering line", y)
-Loop:
-	for x := originX; x < originX+width; x++ {
-		select {
-		case <-w.ctx.Done():
-			break Loop
-		default:
-			v := w.scene.TracePixel(x, y, spp)
-			w.canvas.set(x, y, v)
+func (w *worker) render() {
+	for y := range w.lines {
+		fmt.Println("Starting worker", w.id, "rendering line", y)
+		for x := originX; x < originX+width; x++ {
+			select {
+			case <-w.ctx.Done():
+				w.done <- w.id
+				return
+			default:
+				v := w.scene.TracePixel(x, y, spp)
+				w.canvas.set(x, y, v)
+			}
 		}
+		w.done <- w.id
 	}
-	w.done <- w.id
 }
 
 type canvas struct {
@@ -63,14 +66,11 @@ func (c *canvas) set(x, y int, v color.Color) {
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
 	routines := runtime.NumCPU()
-	if routines > 1 {
-		routines--
-	}
 	if routines > height {
 		routines = height
 	}
-	// routines = 1
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -81,52 +81,37 @@ func main() {
 		cancel()
 	}()
 
+	lineChan := make(chan int, height)
 	doneChan := make(chan int, routines)
 	imgCanvas := &canvas{img: img}
 
-	workers := make([]*worker, routines)
+	for i := 0; i < height; i++ {
+		lineChan <- (originY + i)
+	}
+	close(lineChan)
+
 	for i := 0; i < routines; i++ {
-		workers[i] = &worker{
+		w := &worker{
 			ctx:    ctx,
 			id:     i,
 			scene:  snailtracer.NewBenchmarkScene(),
 			canvas: imgCanvas,
+			lines:  lineChan,
 			done:   doneChan,
 		}
-		go workers[i].renderLine(originY + i)
+		go w.render()
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(height)
-
-	nextLine := routines
 	linesRendered := 0
 	startTime := time.Now()
 
-Loop:
-	for id := range doneChan {
-		select {
-		case <-ctx.Done():
-			break Loop
-		default:
-			wg.Done()
-			linesRendered++
-			expectedTimeLeft := time.Since(startTime) / time.Duration(linesRendered) * time.Duration(height-linesRendered)
-			fmt.Println(linesRendered*100/height, "% done -- Expected time left:", expectedTimeLeft.String())
-
-			if nextLine < height {
-				go workers[id].renderLine(originY + nextLine)
-				nextLine++
-			} else if linesRendered == height {
-				break Loop
-			}
+	for range doneChan {
+		linesRendered++
+		expectedTimeLeft := time.Since(startTime) / time.Duration(linesRendered) * time.Duration(height-linesRendered)
+		fmt.Println(linesRendered*100/height, "% done -- Expected time left:", expectedTimeLeft.String())
+		if linesRendered == height {
+			break
 		}
-	}
-
-	select {
-	case <-ctx.Done():
-	default:
-		wg.Wait()
 	}
 
 	file, err := os.Create(filename)
