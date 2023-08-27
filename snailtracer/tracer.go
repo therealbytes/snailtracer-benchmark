@@ -103,6 +103,7 @@ const (
 )
 
 type Scene struct {
+	id             int
 	seed           uint32
 	width, height  int
 	camera         *Ray
@@ -124,7 +125,7 @@ func (s *Scene) rand() *big.Int {
 }
 
 func (s *Scene) trace(x, y, spp int) Vector {
-	s.seed = uint32(y*s.width + x)
+	s.seed = uint32(s.id*s.width*s.height + y*s.width + x)
 	color := NewVector(0, 0, 0)
 
 	for k := 0; k < spp; k++ {

@@ -4,9 +4,10 @@ import (
 	"math/big"
 )
 
-func NewBenchmarkScene() *Scene {
+func NewBenchmarkScene(id int) *Scene {
 	s := newScene(1024, 768)
 
+	s.id = id
 	s.camera = &Ray{
 		origin:    NewVector(50000000, 50000000, 295600000),
 		direction: (NewVector(0, -42612, -1000000)).Norm(),

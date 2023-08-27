@@ -94,7 +94,7 @@ func main() {
 		w := &worker{
 			ctx:    ctx,
 			id:     i,
-			scene:  snailtracer.NewBenchmarkScene(),
+			scene:  snailtracer.NewBenchmarkScene(i),
 			canvas: imgCanvas,
 			lines:  lineChan,
 			done:   doneChan,

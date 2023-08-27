@@ -18,7 +18,7 @@ func validResult(r, g, b int64) bool {
 }
 
 func TestNativeSnailtracer(t *testing.T) {
-	s := NewBenchmarkScene()
+	s := NewBenchmarkScene(0)
 
 	color := NewVector(0, 0, 0)
 
