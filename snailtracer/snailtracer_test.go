@@ -5,6 +5,7 @@ package snailtracer
 import (
 	_ "embed"
 	"math/big"
+	"sync"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +23,7 @@ func validResult(r, g, b int64) bool {
 }
 
 // BenchmarkNativeSnailtracer-8          32          34383703 ns/op        11873171 B/op     475931 allocs/op
+// BenchmarkParallel4NativeSnailtracer-8 93          12365558 ns/op        11878374 B/op     475990 allocs/op
 // BenchmarkEVMSnailtracer-8              3         447541079 ns/op        41799312 B/op        701 allocs/op
 // BenchmarkTinygoSnailtracer/wazero-8    4         318123902 ns/op             112 B/op          6 allocs/op
 // BenchmarkTinygoSnailtracer/wasmer-8    7         154830142 ns/op             561 B/op         34 allocs/op
@@ -36,6 +38,52 @@ func BenchmarkNativeSnailtracer(b *testing.B) {
 		color = color.Add(s.Trace(600, 600, 8))
 		color = color.Add(s.Trace(522, 524, 8))
 		color = color.ScaleDiv(big.NewInt(4))
+
+		cr := color.X.Int64()
+		cg := color.Y.Int64()
+		cb := color.Z.Int64()
+
+		if !validResult(cr, cg, cb) {
+			b.Fatal("invalid result:", cr, cg, cb)
+		}
+	}
+}
+
+func BenchmarkParallel4NativeSnailtracer(b *testing.B) {
+	tasks := []struct{ x, y, spp int }{
+		{512, 384, 8},
+		{325, 540, 8},
+		{600, 600, 8},
+		{522, 524, 8},
+	}
+	scenes := make([]*Scene, len(tasks))
+	for i := 0; i < len(scenes); i++ {
+		scenes[i] = NewBenchmarkScene(0)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		color := NewVector(0, 0, 0)
+		outputChan := make(chan Vector, len(tasks))
+
+		var wg sync.WaitGroup
+		wg.Add(len(tasks))
+
+		for i, task := range tasks {
+			go func(i, x, y, spp int) {
+				defer wg.Done()
+				outputChan <- scenes[i].Trace(x, y, spp)
+			}(i, task.x, task.y, task.spp)
+		}
+
+		wg.Wait()
+		close(outputChan)
+
+		for output := range outputChan {
+			color = color.Add(output)
+		}
+
+		color = color.ScaleDiv(big.NewInt(int64(len(tasks))))
 
 		cr := color.X.Int64()
 		cg := color.Y.Int64()
