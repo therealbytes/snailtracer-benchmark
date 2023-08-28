@@ -23,7 +23,8 @@ func validResult(r, g, b int64) bool {
 
 // BenchmarkNativeSnailtracer-8          32          34383703 ns/op        11873171 B/op     475931 allocs/op
 // BenchmarkEVMSnailtracer-8              3         447541079 ns/op        41799312 B/op        701 allocs/op
-// BenchmarkTinygoSnailtracer-8           3         349629869 ns/op            4728 B/op          7 allocs/op
+// BenchmarkTinygoSnailtracer/wazero-8    4         318123902 ns/op             112 B/op          6 allocs/op
+// BenchmarkTinygoSnailtracer/wasmer-8    7         154830142 ns/op             561 B/op         34 allocs/op
 
 func BenchmarkNativeSnailtracer(b *testing.B) {
 	s := NewBenchmarkScene(0)
