@@ -25,10 +25,10 @@ func BenchmarkNativeSnailtracer(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		color := NewVector(0, 0, 0)
-		color = color.Add(s.trace(512, 384, 8))
-		color = color.Add(s.trace(325, 540, 8))
-		color = color.Add(s.trace(600, 600, 8))
-		color = color.Add(s.trace(522, 524, 8))
+		color = color.Add(s.Trace(512, 384, 8))
+		color = color.Add(s.Trace(325, 540, 8))
+		color = color.Add(s.Trace(600, 600, 8))
+		color = color.Add(s.Trace(522, 524, 8))
 		color = color.ScaleDiv(big.NewInt(4))
 
 		cr := color.X.Int64()
