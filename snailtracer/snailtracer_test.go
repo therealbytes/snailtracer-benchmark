@@ -128,7 +128,6 @@ func BenchmarkTinygoSnailtracer(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				b.Log(ret)
 				cr := int64(ret[0])
 				cg := int64(ret[32])
 				cb := int64(ret[64])

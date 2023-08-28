@@ -15,6 +15,9 @@ type snailtracerPrecompile struct {
 }
 
 func (t *snailtracerPrecompile) Run(env api.Environment, input []byte) ([]byte, error) {
+	if t.scene == nil {
+		t.scene = snailtracer.NewBenchmarkScene(0) // Wasmer won't work unless we do this every time
+	}
 	color := snailtracer.NewVector(0, 0, 0)
 	color = color.Add(t.scene.Trace(512, 384, 8))
 	color = color.Add(t.scene.Trace(325, 540, 8))
