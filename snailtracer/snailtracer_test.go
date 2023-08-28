@@ -14,33 +14,37 @@ import (
 )
 
 func validResult(r, g, b int64) bool {
-	return r == 19 && g == 19 && b == 90
+	return r == 17 && g == 17 && b == 53
 }
 
-func TestNativeSnailtracer(t *testing.T) {
+// BenchmarkNativeSnailtracer-8          32          34383703 ns/op        11873171 B/op     475931 allocs/op
+// BenchmarkEVMSnailtracer-8              3         447541079 ns/op        41799312 B/op        701 allocs/op
+
+func BenchmarkNativeSnailtracer(b *testing.B) {
 	s := NewBenchmarkScene(0)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		color := NewVector(0, 0, 0)
+		color = color.Add(s.trace(512, 384, 8))
+		color = color.Add(s.trace(325, 540, 8))
+		color = color.Add(s.trace(600, 600, 8))
+		color = color.Add(s.trace(522, 524, 8))
+		color = color.ScaleDiv(big.NewInt(4))
 
-	color := NewVector(0, 0, 0)
+		cr := color.x.Int64()
+		cg := color.y.Int64()
+		cb := color.z.Int64()
 
-	color = color.Add(s.trace(512, 384, 8)) // Flat diffuse surface, opposite wall
-	color = color.Add(s.trace(325, 540, 8)) // Reflective surface mirroring left wall
-	color = color.Add(s.trace(600, 600, 8)) // Refractive surface reflecting right wall
-	color = color.Add(s.trace(522, 524, 8)) // Reflective surface mirroring the refractive surface reflecting the light
-	color = color.ScaleDiv(big.NewInt(4))
-
-	r := color.x.Int64()
-	g := color.y.Int64()
-	b := color.z.Int64()
-
-	if !validResult(r, g, b) {
-		t.Fatal("invalid result:", r, g, b)
+		if !validResult(cr, cg, cb) {
+			b.Fatal("invalid result:", cr, cg, cb)
+		}
 	}
 }
 
 //go:embed testdata/bytecode.txt
 var bytecodeHex []byte
 
-func TestEVMSnailtracer(t *testing.T) {
+func BenchmarkEVMSnailtracer(b *testing.B) {
 	var (
 		address        = common.HexToAddress("0xc0ffee")
 		origin         = common.HexToAddress("0xc0ffee0001")
@@ -65,7 +69,7 @@ func TestEVMSnailtracer(t *testing.T) {
 
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	if err != nil {
-		t.Fatal(err)
+		b.Fatal(err)
 	}
 
 	statedb.CreateAccount(address)
@@ -80,19 +84,23 @@ func TestEVMSnailtracer(t *testing.T) {
 
 	_, _, err = evm.Call(vm.AccountRef(origin), address, initInput, gasLimit, common.Big0)
 	if err != nil {
-		t.Fatal(err)
+		b.Fatal(err)
 	}
 
-	ret, _, err = evm.Call(vm.AccountRef(origin), address, benchmarkInput, gasLimit, common.Big0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	b.ResetTimer()
 
-	r := int64(ret[0])
-	g := int64(ret[32])
-	b := int64(ret[64])
+	for i := 0; i < b.N; i++ {
+		ret, _, err = evm.Call(vm.AccountRef(origin), address, benchmarkInput, gasLimit, common.Big0)
+		if err != nil {
+			b.Fatal(err)
+		}
 
-	if !validResult(r, g, b) {
-		t.Fatal("invalid result:", r, g, b)
+		cr := int64(ret[0])
+		cg := int64(ret[32])
+		cb := int64(ret[64])
+
+		if !validResult(cr, cg, cb) {
+			b.Fatal("invalid result:", cr, cg, cb)
+		}
 	}
 }
