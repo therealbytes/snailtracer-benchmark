@@ -18,7 +18,7 @@ type Sphere struct {
 	reflection Material
 }
 
-func (s *Sphere) intersect(r *Ray) *big.Int {
+func (s *Sphere) Intersect(r *Ray) *big.Int {
 	op := s.position.Sub(r.origin)
 	b := new(big.Int).Quo(op.Dot(r.direction), Big1e6)
 
@@ -53,7 +53,7 @@ type Triangle struct {
 	reflection Material
 }
 
-func (t *Triangle) intersect(r *Ray) *big.Int {
+func (t *Triangle) Intersect(r *Ray) *big.Int {
 	e1 := t.b.Sub(t.a)
 	e2 := t.c.Sub(t.a)
 	p := r.direction.Cross(e2)
@@ -348,7 +348,7 @@ func (s *Scene) traceRay(ray *Ray) (*big.Int, Primitive, int) {
 	dist := NewBig0()
 
 	for i := 0; i < len(s.spheres); i++ {
-		d := s.spheres[i].intersect(ray)
+		d := s.spheres[i].Intersect(ray)
 		if d.Cmp(Big0) > 0 && (dist.Cmp(Big0) == 0 || d.Cmp(dist) < 0) {
 			dist.Set(d)
 			p = SpherePrimitive
@@ -357,7 +357,7 @@ func (s *Scene) traceRay(ray *Ray) (*big.Int, Primitive, int) {
 	}
 
 	for i := 0; i < len(s.triangles); i++ {
-		d := s.triangles[i].intersect(ray)
+		d := s.triangles[i].Intersect(ray)
 		if d.Cmp(Big0) > 0 && (dist.Cmp(Big0) == 0 || d.Cmp(dist) < 0) {
 			dist.Set(d)
 			p = TrianglePrimitive

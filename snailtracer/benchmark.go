@@ -12,7 +12,7 @@ func NewBenchmarkScene(id int) *Scene {
 		origin:    NewVector(50000000, 50000000, 295600000),
 		direction: (NewVector(0, -42612, -1000000)).Norm(),
 	}
-	s.deltaX = NewVector(s.width*513500/s.height, 0, 0)
+	s.deltaX = NewVector(int64(s.width*513500/s.height), 0, 0)
 	s.deltaY = s.deltaX.Cross(s.camera.direction).Norm().
 		ScaleMul(big.NewInt(513500)).
 		ScaleDiv(big.NewInt(1000000))

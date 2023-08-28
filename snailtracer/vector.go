@@ -8,7 +8,7 @@ type Vector struct {
 	X, Y, Z *big.Int
 }
 
-func NewVector(x, y, z int) Vector {
+func NewVector(x, y, z int64) Vector {
 	return Vector{big.NewInt(int64(x)), big.NewInt(int64(y)), big.NewInt(int64(z))}
 }
 
