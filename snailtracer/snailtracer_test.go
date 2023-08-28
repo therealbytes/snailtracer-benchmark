@@ -1,3 +1,5 @@
+//go:build !tinygo
+
 package snailtracer
 
 import (
@@ -6,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/concrete/precompiles"
 	"github.com/ethereum/go-ethereum/concrete/wasm"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -111,18 +114,28 @@ func BenchmarkEVMSnailtracer(b *testing.B) {
 var wasmBytecode []byte
 
 func BenchmarkTinygoSnailtracer(b *testing.B) {
-	pc := wasm.NewWasmPrecompile(wasmBytecode)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ret, err := pc.Run(nil, []byte{})
-		if err != nil {
-			b.Fatal(err)
-		}
-		cr := int64(ret[0])
-		cg := int64(ret[32])
-		cb := int64(ret[64])
-		if !validResult(cr, cg, cb) {
-			b.Fatal("invalid result:", cr, cg, cb)
-		}
+	runtimes := []struct {
+		name string
+		pc   precompiles.Precompile
+	}{
+		{"wazero", wasm.NewWazeroPrecompile(wasmBytecode)},
+		{"wasmer", wasm.NewWasmerPrecompile(wasmBytecode)},
+	}
+	for _, runtime := range runtimes {
+		b.Run(runtime.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				ret, err := runtime.pc.Run(nil, nil)
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.Log(ret)
+				cr := int64(ret[0])
+				cg := int64(ret[32])
+				cb := int64(ret[64])
+				if !validResult(cr, cg, cb) {
+					b.Fatal("invalid result:", cr, cg, cb)
+				}
+			}
+		})
 	}
 }
