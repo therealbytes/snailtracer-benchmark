@@ -1,4 +1,4 @@
-.PHONY: contract
+.PHONY: contract deploy tinygo image
 
 contract:
 	forge build --optimizer-runs 1000
@@ -7,6 +7,9 @@ contract:
 deploy: contract
 	@address=$$(forge create ./snailtracer-sol/Snailtracer.sol:SnailTracer --private-key 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6 --json | jq -r '.deployedTo'); \
 	cast send $$address "Benchmark()" --private-key 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6 --gas-limit 100000000
+
+tinygo:
+	tinygo build -opt=2 -o ./snailtracer/testdata/snailtracer.wasm -target wasi ./tinygo/main.go
 
 image:
 	go run ./cmd/render.go

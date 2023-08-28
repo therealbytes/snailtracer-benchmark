@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/concrete/wasm"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -19,6 +20,7 @@ func validResult(r, g, b int64) bool {
 
 // BenchmarkNativeSnailtracer-8          32          34383703 ns/op        11873171 B/op     475931 allocs/op
 // BenchmarkEVMSnailtracer-8              3         447541079 ns/op        41799312 B/op        701 allocs/op
+// BenchmarkTinygoSnailtracer-8           3         349629869 ns/op            4728 B/op          7 allocs/op
 
 func BenchmarkNativeSnailtracer(b *testing.B) {
 	s := NewBenchmarkScene(0)
@@ -99,6 +101,26 @@ func BenchmarkEVMSnailtracer(b *testing.B) {
 		cg := int64(ret[32])
 		cb := int64(ret[64])
 
+		if !validResult(cr, cg, cb) {
+			b.Fatal("invalid result:", cr, cg, cb)
+		}
+	}
+}
+
+//go:embed testdata/snailtracer.wasm
+var wasmBytecode []byte
+
+func BenchmarkTinygoSnailtracer(b *testing.B) {
+	pc := wasm.NewWasmPrecompile(wasmBytecode)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ret, err := pc.Run(nil, []byte{})
+		if err != nil {
+			b.Fatal(err)
+		}
+		cr := int64(ret[0])
+		cg := int64(ret[32])
+		cb := int64(ret[64])
 		if !validResult(cr, cg, cb) {
 			b.Fatal("invalid result:", cr, cg, cb)
 		}
