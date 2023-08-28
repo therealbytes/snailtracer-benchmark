@@ -14,7 +14,8 @@ docs/
 .env
 
 # Bytecode
-snailtracer/testdata/bytecode.txt
+snailtracer/testdata/snailtracer.evm
+snailtracer/testdata/snailtracer.wasm
 
 # Render
 out.png

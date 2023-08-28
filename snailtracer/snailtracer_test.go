@@ -43,14 +43,14 @@ func BenchmarkNativeSnailtracer(b *testing.B) {
 	}
 }
 
-//go:embed testdata/bytecode.txt
-var bytecodeHex []byte
+//go:embed testdata/snailtracer.evm
+var evmBytecodeHex []byte
 
 func BenchmarkEVMSnailtracer(b *testing.B) {
 	var (
 		address        = common.HexToAddress("0xc0ffee")
 		origin         = common.HexToAddress("0xc0ffee0001")
-		bytecode       = common.Hex2Bytes(string(bytecodeHex)[2:])
+		bytecode       = common.Hex2Bytes(string(evmBytecodeHex)[2:])
 		initInput      = common.Hex2Bytes("57a86f7d")
 		benchmarkInput = common.Hex2Bytes("30627b7c")
 		gasLimit       = uint64(1e9)
