@@ -190,8 +190,8 @@ func (s *Scene) radiance(ray *Ray) Vector {
 	}
 
 	ref := Big1
-	if color.z.Cmp(ref) > 0 {
-		ref = color.z
+	if color.x.Cmp(ref) > 0 {
+		ref = color.x
 	}
 	if color.y.Cmp(ref) > 0 {
 		ref = color.y

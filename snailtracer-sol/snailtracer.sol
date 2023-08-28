@@ -636,9 +636,8 @@ contract SnailTracer {
         }
         // After a number of reflections, randomly stop radiance calculation
         int ref = 1;
-        if (color.z > ref) {
-            // TODO: Shouldn't this be color.x?
-            ref = color.z;
+        if (color.x > ref) {
+            ref = color.x;
         }
         if (color.y > ref) {
             ref = color.y;
