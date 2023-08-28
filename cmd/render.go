@@ -35,6 +35,10 @@ type worker struct {
 	done   chan int
 }
 
+func vectorToColor(v snailtracer.Vector) color.Color {
+	return color.RGBA{R: byte(v.X.Int64()), G: byte(v.Y.Int64()), B: byte(v.Z.Int64()), A: 255}
+}
+
 func (w *worker) render() {
 	for y := range w.lines {
 		fmt.Println("Starting worker", w.id, "rendering line", y)
@@ -44,7 +48,7 @@ func (w *worker) render() {
 				w.done <- w.id
 				return
 			default:
-				v := w.scene.TracePixel(x, y, spp)
+				v := vectorToColor(w.scene.Trace(x, y, spp))
 				w.canvas.set(x, y, v)
 			}
 		}

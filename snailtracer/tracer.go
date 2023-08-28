@@ -1,8 +1,6 @@
 package snailtracer
 
 import (
-	"image"
-	imageColor "image/color"
 	"math/big"
 )
 
@@ -190,14 +188,14 @@ func (s *Scene) radiance(ray *Ray) Vector {
 	}
 
 	ref := Big1
-	if color.x.Cmp(ref) > 0 {
-		ref = color.x
+	if color.X.Cmp(ref) > 0 {
+		ref = color.X
 	}
-	if color.y.Cmp(ref) > 0 {
-		ref = color.y
+	if color.Y.Cmp(ref) > 0 {
+		ref = color.Y
 	}
-	if color.z.Cmp(ref) > 0 {
-		ref = color.z
+	if color.Z.Cmp(ref) > 0 {
+		ref = color.Z
 	}
 
 	ray.depth++
@@ -270,7 +268,7 @@ func (s *Scene) diffuse(ray *Ray, intersect, normal Vector) Vector {
 	r2s := new(big.Int).Mul(Sqrt(r2), Big1e3)
 
 	var u Vector
-	if Abs(normal.x).Cmp(Big1e5) > 0 {
+	if Abs(normal.X).Cmp(Big1e5) > 0 {
 		u = NewVector(0, 1000000, 0)
 	} else {
 		u = NewVector(1000000, 0, 0)
@@ -370,17 +368,6 @@ func (s *Scene) traceRay(ray *Ray) (*big.Int, Primitive, int) {
 	return dist, p, id
 }
 
-func (s *Scene) TracePixel(x, y, spp int) imageColor.Color {
-	return s.trace(x, y, spp).Color()
-}
-
-func (s *Scene) TraceArea(x0, y0, w, h, spp int) *image.RGBA {
-	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			pixel := s.TracePixel(x0+x, y0+y, spp)
-			img.Set(x, y, pixel)
-		}
-	}
-	return img
+func (s *Scene) Trace(x, y, spp int) Vector {
+	return s.trace(x, y, spp)
 }

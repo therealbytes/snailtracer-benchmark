@@ -31,9 +31,9 @@ func BenchmarkNativeSnailtracer(b *testing.B) {
 		color = color.Add(s.trace(522, 524, 8))
 		color = color.ScaleDiv(big.NewInt(4))
 
-		cr := color.x.Int64()
-		cg := color.y.Int64()
-		cb := color.z.Int64()
+		cr := color.X.Int64()
+		cg := color.Y.Int64()
+		cb := color.Z.Int64()
 
 		if !validResult(cr, cg, cb) {
 			b.Fatal("invalid result:", cr, cg, cb)

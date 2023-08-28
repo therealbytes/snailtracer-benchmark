@@ -1,12 +1,11 @@
 package snailtracer
 
 import (
-	imageColor "image/color"
 	"math/big"
 )
 
 type Vector struct {
-	x, y, z *big.Int
+	X, Y, Z *big.Int
 }
 
 func NewVector(x, y, z int) Vector {
@@ -15,50 +14,50 @@ func NewVector(x, y, z int) Vector {
 
 func (v Vector) Add(u Vector) Vector {
 	return Vector{
-		new(big.Int).Add(v.x, u.x),
-		new(big.Int).Add(v.y, u.y),
-		new(big.Int).Add(v.z, u.z),
+		new(big.Int).Add(v.X, u.X),
+		new(big.Int).Add(v.Y, u.Y),
+		new(big.Int).Add(v.Z, u.Z),
 	}
 }
 
 func (v Vector) Sub(u Vector) Vector {
 	return Vector{
-		new(big.Int).Sub(v.x, u.x),
-		new(big.Int).Sub(v.y, u.y),
-		new(big.Int).Sub(v.z, u.z),
+		new(big.Int).Sub(v.X, u.X),
+		new(big.Int).Sub(v.Y, u.Y),
+		new(big.Int).Sub(v.Z, u.Z),
 	}
 }
 
 func (v Vector) ScaleMul(m *big.Int) Vector {
 	return Vector{
-		new(big.Int).Mul(m, v.x),
-		new(big.Int).Mul(m, v.y),
-		new(big.Int).Mul(m, v.z),
+		new(big.Int).Mul(m, v.X),
+		new(big.Int).Mul(m, v.Y),
+		new(big.Int).Mul(m, v.Z),
 	}
 }
 
 func (v Vector) ScaleDiv(d *big.Int) Vector {
 	return Vector{
-		new(big.Int).Quo(v.x, d),
-		new(big.Int).Quo(v.y, d),
-		new(big.Int).Quo(v.z, d),
+		new(big.Int).Quo(v.X, d),
+		new(big.Int).Quo(v.Y, d),
+		new(big.Int).Quo(v.Z, d),
 	}
 }
 
 func (v Vector) Mul(u Vector) Vector {
 	return Vector{
-		new(big.Int).Mul(v.x, u.x),
-		new(big.Int).Mul(v.y, u.y),
-		new(big.Int).Mul(v.z, u.z),
+		new(big.Int).Mul(v.X, u.X),
+		new(big.Int).Mul(v.Y, u.Y),
+		new(big.Int).Mul(v.Z, u.Z),
 	}
 }
 
 func (v Vector) Dot(u Vector) *big.Int {
 	return new(big.Int).Add(
-		new(big.Int).Mul(v.x, u.x),
+		new(big.Int).Mul(v.X, u.X),
 		new(big.Int).Add(
-			new(big.Int).Mul(v.y, u.y),
-			new(big.Int).Mul(v.z, u.z),
+			new(big.Int).Mul(v.Y, u.Y),
+			new(big.Int).Mul(v.Z, u.Z),
 		),
 	)
 }
@@ -66,24 +65,24 @@ func (v Vector) Dot(u Vector) *big.Int {
 func (v Vector) Cross(u Vector) Vector {
 	return Vector{
 		new(big.Int).Sub(
-			new(big.Int).Mul(v.y, u.z),
-			new(big.Int).Mul(v.z, u.y),
+			new(big.Int).Mul(v.Y, u.Z),
+			new(big.Int).Mul(v.Z, u.Y),
 		),
 		new(big.Int).Sub(
-			new(big.Int).Mul(v.z, u.x),
-			new(big.Int).Mul(v.x, u.z),
+			new(big.Int).Mul(v.Z, u.X),
+			new(big.Int).Mul(v.X, u.Z),
 		),
 		new(big.Int).Sub(
-			new(big.Int).Mul(v.x, u.y),
-			new(big.Int).Mul(v.y, u.x),
+			new(big.Int).Mul(v.X, u.Y),
+			new(big.Int).Mul(v.Y, u.X),
 		),
 	}
 }
 
 func (v Vector) Length() *big.Int {
-	xSq := new(big.Int).Mul(v.x, v.x)
-	ySq := new(big.Int).Mul(v.y, v.y)
-	zSq := new(big.Int).Mul(v.z, v.z)
+	xSq := new(big.Int).Mul(v.X, v.X)
+	ySq := new(big.Int).Mul(v.Y, v.Y)
+	zSq := new(big.Int).Mul(v.Z, v.Z)
 	return Sqrt(new(big.Int).Add(xSq, new(big.Int).Add(ySq, zSq)))
 }
 
@@ -92,20 +91,16 @@ func (v Vector) Norm() Vector {
 	if length.Cmp(Big0) == 0 {
 		return Vector{NewBig0(), NewBig0(), NewBig0()}
 	}
-	nx := new(big.Int).Quo(new(big.Int).Mul(v.x, Big1e6), length)
-	ny := new(big.Int).Quo(new(big.Int).Mul(v.y, Big1e6), length)
-	nz := new(big.Int).Quo(new(big.Int).Mul(v.z, Big1e6), length)
+	nx := new(big.Int).Quo(new(big.Int).Mul(v.X, Big1e6), length)
+	ny := new(big.Int).Quo(new(big.Int).Mul(v.Y, Big1e6), length)
+	nz := new(big.Int).Quo(new(big.Int).Mul(v.Z, Big1e6), length)
 	return Vector{nx, ny, nz}
 }
 
 func (v Vector) Clamp() Vector {
 	return Vector{
-		x: Clamp(v.x),
-		y: Clamp(v.y),
-		z: Clamp(v.z),
+		X: Clamp(v.X),
+		Y: Clamp(v.Y),
+		Z: Clamp(v.Z),
 	}
-}
-
-func (v Vector) Color() imageColor.Color {
-	return imageColor.RGBA{R: byte(v.x.Int64()), G: byte(v.y.Int64()), B: byte(v.z.Int64()), A: 255}
 }
