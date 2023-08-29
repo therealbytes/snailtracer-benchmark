@@ -16,17 +16,19 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
 func validResult(r, g, b int64) bool {
 	return r == 17 && g == 17 && b == 53
 }
 
-// BenchmarkNativeSnailtracer-8          32          34383703 ns/op        11873171 B/op     475931 allocs/op
-// BenchmarkParallel4NativeSnailtracer-8 93          12365558 ns/op        11878374 B/op     475990 allocs/op
-// BenchmarkEVMSnailtracer-8              3         447541079 ns/op        41799312 B/op        701 allocs/op
-// BenchmarkTinygoSnailtracer/wazero-8    4         318123902 ns/op             112 B/op          6 allocs/op
-// BenchmarkTinygoSnailtracer/wasmer-8    7         154830142 ns/op             561 B/op         34 allocs/op
+// NativeSnailtracer-8                        32          34383703 ns/op        11873171 B/op     475931 allocs/op
+// Parallel4NativeSnailtracer-8               93          12365558 ns/op        11878374 B/op     475990 allocs/op
+// EVMSnailtracer-8                            3         447541079 ns/op        41799312 B/op        701 allocs/op
+// TinygoSnailtracer/wazero-8                  4         318123902 ns/op             112 B/op          6 allocs/op
+// TinygoSnailtracer/wasmer/singlepass-8       4         261384293 ns/op             560 B/op         34 allocs/op
+// TinygoSnailtracer/wasmer/cranelift-8        7         153933651 ns/op             561 B/op         34 allocs/op
 
 func BenchmarkNativeSnailtracer(b *testing.B) {
 	s := NewBenchmarkScene(0)
@@ -168,7 +170,8 @@ func BenchmarkTinygoSnailtracer(b *testing.B) {
 		pc   precompiles.Precompile
 	}{
 		{"wazero", wasm.NewWazeroPrecompile(wasmBytecode)},
-		{"wasmer", wasm.NewWasmerPrecompile(wasmBytecode)},
+		{"wasmer/singlepass", wasm.NewWasmerPrecompileWithConfig(wasmBytecode, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/cranelift", wasm.NewWasmerPrecompileWithConfig(wasmBytecode, wasmer.NewConfig().UseCraneliftCompiler())},
 	}
 	for _, runtime := range runtimes {
 		b.Run(runtime.name, func(b *testing.B) {
