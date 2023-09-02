@@ -8,8 +8,8 @@
 
 ![Benchmark chart](./chart-uint256.jpeg)
 
-**Render (SPP=5)**
+**Render (512x384 SPP=16)**
 
-Check out [Karalabe's repo](https://github.com/karalabe/snailtracer) for [a higher SPP render](https://raw.githubusercontent.com/karalabe/snailtracer/master/snailtracer.png).
+Check out [Karalabe's repo](https://github.com/karalabe/snailtracer) for [a higher resolution render](https://raw.githubusercontent.com/karalabe/snailtracer/master/snailtracer.png).
 
-![Benchmark chart](./render.jpeg)
+![Benchmark chart](./render.png)
