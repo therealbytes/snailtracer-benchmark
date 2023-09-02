@@ -1,8 +1,6 @@
 package snailtracer
 
-import (
-	"math/big"
-)
+import "github.com/holiman/uint256"
 
 func NewBenchmarkScene(id int) *Scene {
 	s := newScene(1024, 768)
@@ -14,18 +12,18 @@ func NewBenchmarkScene(id int) *Scene {
 	}
 	s.deltaX = NewVector(int64(s.width*513500/s.height), 0, 0)
 	s.deltaY = s.deltaX.Cross(s.camera.direction).Norm().
-		ScaleMul(big.NewInt(513500)).
-		ScaleDiv(big.NewInt(1000000))
+		ScaleMul(uint256.NewInt(513500)).
+		ScaleDiv(uint256.NewInt(1000000))
 
 	s.spheres = []*Sphere{
-		{big.NewInt(100000000000), NewVector(100001000000, 40800000, 81600000), NewVector(0, 0, 0), NewVector(750000, 250000, 250000), DiffuseMaterial},
-		{big.NewInt(100000000000), NewVector(-99901000000, 40800000, 81600000), NewVector(0, 0, 0), NewVector(250000, 250000, 750000), DiffuseMaterial},
-		{big.NewInt(100000000000), NewVector(50000000, 40800000, 100000000000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
-		{big.NewInt(100000000000), NewVector(50000000, 40800000, -99830000000), NewVector(0, 0, 0), NewVector(0, 0, 0), DiffuseMaterial},
-		{big.NewInt(100000000000), NewVector(50000000, 100000000000, 81600000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
-		{big.NewInt(100000000000), NewVector(50000000, -99918400000, 81600000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
-		{big.NewInt(16500000), NewVector(27000000, 16500000, 47000000), NewVector(0, 0, 0), NewVector(999000, 999000, 999000), SpecularMaterial},
-		{big.NewInt(600000000), NewVector(50000000, 681330000, 81600000), NewVector(12000000, 12000000, 12000000), NewVector(0, 0, 0), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(100001000000, 40800000, 81600000), NewVector(0, 0, 0), NewVector(750000, 250000, 250000), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(-99901000000, 40800000, 81600000), NewVector(0, 0, 0), NewVector(250000, 250000, 750000), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(50000000, 40800000, 100000000000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(50000000, 40800000, -99830000000), NewVector(0, 0, 0), NewVector(0, 0, 0), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(50000000, 100000000000, 81600000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
+		{uint256.NewInt(100000000000), NewVector(50000000, -99918400000, 81600000), NewVector(0, 0, 0), NewVector(750000, 750000, 750000), DiffuseMaterial},
+		{uint256.NewInt(16500000), NewVector(27000000, 16500000, 47000000), NewVector(0, 0, 0), NewVector(999000, 999000, 999000), SpecularMaterial},
+		{uint256.NewInt(600000000), NewVector(50000000, 681330000, 81600000), NewVector(12000000, 12000000, 12000000), NewVector(0, 0, 0), DiffuseMaterial},
 	}
 
 	s.triangles = []*Triangle{

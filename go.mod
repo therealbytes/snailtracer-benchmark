@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/ethereum/go-ethereum v1.12.2
+	github.com/holiman/uint256 v1.2.3
 	github.com/wasmerio/wasmer-go v1.0.4
 )
 
@@ -29,7 +30,6 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
-	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect

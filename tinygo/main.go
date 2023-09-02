@@ -1,11 +1,10 @@
 package main
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/concrete/api"
 	"github.com/ethereum/go-ethereum/concrete/lib"
 	"github.com/ethereum/go-ethereum/tinygo"
+	"github.com/holiman/uint256"
 	"github.com/therealbytes/concrete-snailtrace/snailtracer"
 )
 
@@ -23,11 +22,11 @@ func (t *snailtracerPrecompile) Run(env api.Environment, input []byte) ([]byte, 
 	color = color.Add(t.scene.Trace(325, 540, 8))
 	color = color.Add(t.scene.Trace(600, 600, 8))
 	color = color.Add(t.scene.Trace(522, 524, 8))
-	color = color.ScaleDiv(big.NewInt(4))
+	color = color.ScaleDiv(uint256.NewInt(4))
 
-	cr := color.X.Int64()
-	cg := color.Y.Int64()
-	cb := color.Z.Int64()
+	cr := color.X.Uint64()
+	cg := color.Y.Uint64()
+	cb := color.Z.Uint64()
 
 	result := make([]byte, 96)
 	result[0] = byte(cr)

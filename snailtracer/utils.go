@@ -1,102 +1,102 @@
 package snailtracer
 
 import (
-	"math/big"
+	"github.com/holiman/uint256"
 )
 
 var (
-	BigNeg1    = big.NewInt(-1)
-	Big0       = big.NewInt(0)
-	Big1       = big.NewInt(1)
-	Big2       = big.NewInt(2)
-	Big1e3     = big.NewInt(1e3)
-	Big4e4     = big.NewInt(40000)
-	Big1e5     = big.NewInt(100000)
-	Big1e6     = big.NewInt(1e6)
-	Big1e12    = big.NewInt(1e12)
-	Big1e30, _ = new(big.Int).SetString("1000000000000000000000000000000", 10)
+	BigNeg1    = new(uint256.Int).Neg(uint256.NewInt(1))
+	Big0       = uint256.NewInt(0)
+	Big1       = uint256.NewInt(1)
+	Big2       = uint256.NewInt(2)
+	Big1e3     = uint256.NewInt(1e3)
+	Big4e4     = uint256.NewInt(40000)
+	Big1e5     = uint256.NewInt(100000)
+	Big1e6     = uint256.NewInt(1e6)
+	Big1e12    = uint256.NewInt(1e12)
+	Big1e30, _ = uint256.FromHex("0xC9F2C9CD04674EDEA40000000")
 )
 
-func NewBig0() *big.Int {
-	return big.NewInt(0)
+func NewBig0() *uint256.Int {
+	return uint256.NewInt(0)
 }
 
-func NewBig1() *big.Int {
-	return big.NewInt(1)
+func NewBig1() *uint256.Int {
+	return uint256.NewInt(1)
 }
 
-func NewBig2() *big.Int {
-	return big.NewInt(2)
+func NewBig2() *uint256.Int {
+	return uint256.NewInt(2)
 }
 
-func NewBig1e3() *big.Int {
-	return big.NewInt(1000)
+func NewBig1e3() *uint256.Int {
+	return uint256.NewInt(1000)
 }
 
-func NewBig1e6() *big.Int {
-	return big.NewInt(1000000)
+func NewBig1e6() *uint256.Int {
+	return uint256.NewInt(1000000)
 }
 
-func NewBig1e12() *big.Int {
-	return big.NewInt(1000000000000)
+func NewBig1e12() *uint256.Int {
+	return uint256.NewInt(1000000000000)
 }
 
-func Abs(x *big.Int) *big.Int {
+func Abs(x *uint256.Int) *uint256.Int {
 	if x.Sign() > 0 {
-		return new(big.Int).Set(x)
+		return new(uint256.Int).Set(x)
 	}
-	return new(big.Int).Neg(x)
+	return new(uint256.Int).Neg(x)
 }
 
-func Clamp(x *big.Int) *big.Int {
-	if x.Cmp(Big0) < 0 {
+func Clamp(x *uint256.Int) *uint256.Int {
+	if Cmp(x, Big0) < 0 {
 		return NewBig0()
 	}
-	if x.Cmp(Big1e6) > 0 {
+	if Cmp(x, Big1e6) > 0 {
 		return NewBig1e6()
 	}
-	return new(big.Int).Set(x)
+	return new(uint256.Int).Set(x)
 }
 
-func Sqrt(x *big.Int) *big.Int {
-	z := new(big.Int).Add(x, Big1)
-	z.Quo(z, Big2)
-	y := new(big.Int).Set(x)
-	for z.Cmp(y) < 0 {
+func Sqrt(x *uint256.Int) *uint256.Int {
+	z := new(uint256.Int).Add(x, Big1)
+	z.SDiv(z, Big2)
+	y := new(uint256.Int).Set(x)
+	for Cmp(z, y) < 0 {
 		y.Set(z)
-		z.Quo(x, y)
+		z.SDiv(x, y)
 		z.Add(z, y)
-		z.Quo(z, Big2)
+		z.SDiv(z, Big2)
 	}
 	return y
 }
 
-func Sin(x *big.Int) *big.Int {
-	constant := big.NewInt(6283184)
+func Sin(x *uint256.Int) *uint256.Int {
+	constant := uint256.NewInt(6283184)
 	for x.Sign() < 0 {
 		x.Add(x, constant)
 	}
-	for x.Cmp(constant) >= 0 {
+	for Cmp(x, constant) >= 0 {
 		x.Sub(x, constant)
 	}
 
-	n := new(big.Int).Set(x)
+	n := new(uint256.Int).Set(x)
 	y := NewBig0()
 	s := NewBig1()
 	d := NewBig1()
 	f := NewBig2()
-	for n.Cmp(d) > 0 {
-		t := new(big.Int).Mul(s, n)
-		t.Quo(t, d)
+	for Cmp(n, d) > 0 {
+		t := new(uint256.Int).Mul(s, n)
+		t.SDiv(t, d)
 		y.Add(y, t)
 
 		n.Mul(n, x)
 		n.Mul(n, x)
-		n.Quo(n, Big1e6)
-		n.Quo(n, Big1e6)
+		n.SDiv(n, Big1e6)
+		n.SDiv(n, Big1e6)
 
 		d.Mul(d, f)
-		d.Mul(d, new(big.Int).Add(f, Big1))
+		d.Mul(d, new(uint256.Int).Add(f, Big1))
 
 		s.Neg(s)
 
@@ -105,9 +105,19 @@ func Sin(x *big.Int) *big.Int {
 	return y
 }
 
-func Cos(x *big.Int) *big.Int {
+func Cos(x *uint256.Int) *uint256.Int {
 	s := Sin(x)
-	sSquared := new(big.Int).Mul(s, s)
-	difference := new(big.Int).Sub(Big1e12, sSquared)
+	sSquared := new(uint256.Int).Mul(s, s)
+	difference := new(uint256.Int).Sub(Big1e12, sSquared)
 	return Sqrt(difference)
+}
+
+func Cmp(x, y *uint256.Int) int {
+	if x.Sign() < y.Sign() {
+		return -1
+	}
+	if x.Sign() > y.Sign() {
+		return 1
+	}
+	return x.Cmp(y)
 }

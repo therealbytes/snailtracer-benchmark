@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	originX  = 0
-	originY  = 0
-	width    = 1024
-	height   = 768
+	originX  = 1024 / 2
+	originY  = 768 / 2
+	width    = 1024 / 4
+	height   = 768 / 4
 	spp      = 1
 	filename = "out.png"
 )
@@ -36,7 +36,7 @@ type worker struct {
 }
 
 func vectorToColor(v snailtracer.Vector) color.Color {
-	return color.RGBA{R: byte(v.X.Int64()), G: byte(v.Y.Int64()), B: byte(v.Z.Int64()), A: 255}
+	return color.RGBA{R: byte(v.X.Uint64()), G: byte(v.Y.Uint64()), B: byte(v.Z.Uint64()), A: 255}
 }
 
 func (w *worker) render() {

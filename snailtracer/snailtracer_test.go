@@ -16,19 +16,29 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
-func validResult(r, g, b int64) bool {
+func validResult(r, g, b uint64) bool {
 	return r == 17 && g == 17 && b == 53
 }
 
+// big.Int
 // NativeSnailtracer-8                        32          34383703 ns/op        11873171 B/op     475931 allocs/op
 // Parallel4NativeSnailtracer-8               93          12365558 ns/op        11878374 B/op     475990 allocs/op
 // EVMSnailtracer-8                            3         447541079 ns/op        41799312 B/op        701 allocs/op
 // TinygoSnailtracer/wazero-8                  4         318123902 ns/op             112 B/op          6 allocs/op
 // TinygoSnailtracer/wasmer/singlepass-8       4         261384293 ns/op             560 B/op         34 allocs/op
 // TinygoSnailtracer/wasmer/cranelift-8        7         153933651 ns/op             561 B/op         34 allocs/op
+
+// uint256.Int
+// NativeSnailtracer-8                          73          15308502 ns/op         2794699 B/op      87334 allocs/op
+// Parallel4NativeSnailtracer-8                229           5708114 ns/op         2795407 B/op      87345 allocs/op
+// EVMSnailtracer-8                              3         443557845 ns/op        41799274 B/op        700 allocs/op
+// TinygoSnailtracer/wazero-8                    7         144487708 ns/op             113 B/op          6 allocs/op
+// TinygoSnailtracer/wasmer/singlepass-8         9         123184179 ns/op             560 B/op        34 allocs/op
+// TinygoSnailtracer/wasmer/cranelift-8          16          84588197 ns/op             560 B/op        34 allocs/op
 
 func BenchmarkNativeSnailtracer(b *testing.B) {
 	s := NewBenchmarkScene(0)
@@ -39,11 +49,11 @@ func BenchmarkNativeSnailtracer(b *testing.B) {
 		color = color.Add(s.Trace(325, 540, 8))
 		color = color.Add(s.Trace(600, 600, 8))
 		color = color.Add(s.Trace(522, 524, 8))
-		color = color.ScaleDiv(big.NewInt(4))
+		color = color.ScaleDiv(uint256.NewInt(4))
 
-		cr := color.X.Int64()
-		cg := color.Y.Int64()
-		cb := color.Z.Int64()
+		cr := color.X.Uint64()
+		cg := color.Y.Uint64()
+		cb := color.Z.Uint64()
 
 		if !validResult(cr, cg, cb) {
 			b.Fatal("invalid result:", cr, cg, cb)
@@ -85,11 +95,11 @@ func BenchmarkParallel4NativeSnailtracer(b *testing.B) {
 			color = color.Add(output)
 		}
 
-		color = color.ScaleDiv(big.NewInt(int64(len(tasks))))
+		color = color.ScaleDiv(uint256.NewInt(uint64(len(tasks))))
 
-		cr := color.X.Int64()
-		cg := color.Y.Int64()
-		cb := color.Z.Int64()
+		cr := color.X.Uint64()
+		cg := color.Y.Uint64()
+		cb := color.Z.Uint64()
 
 		if !validResult(cr, cg, cb) {
 			b.Fatal("invalid result:", cr, cg, cb)
@@ -151,9 +161,9 @@ func BenchmarkEVMSnailtracer(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		cr := int64(ret[0])
-		cg := int64(ret[32])
-		cb := int64(ret[64])
+		cr := uint64(ret[0])
+		cg := uint64(ret[32])
+		cb := uint64(ret[64])
 
 		if !validResult(cr, cg, cb) {
 			b.Fatal("invalid result:", cr, cg, cb)
@@ -180,9 +190,9 @@ func BenchmarkTinygoSnailtracer(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				cr := int64(ret[0])
-				cg := int64(ret[32])
-				cb := int64(ret[64])
+				cr := uint64(ret[0])
+				cg := uint64(ret[32])
+				cb := uint64(ret[64])
 				if !validResult(cr, cg, cb) {
 					b.Fatal("invalid result:", cr, cg, cb)
 				}
