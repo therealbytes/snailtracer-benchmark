@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	originX  = 1024 / 2
-	originY  = 768 / 2
-	width    = 1024 / 4
-	height   = 768 / 4
+	originX  = 1024
+	originY  = 768
+	width    = 1024
+	height   = 768
 	spp      = 1
 	filename = "out.png"
 )
