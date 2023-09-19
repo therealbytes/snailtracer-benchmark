@@ -1,5 +1,5 @@
 [profile.default]
-src = "snailtracer-sol"
+src = "sol"
 out = "out"
 libs = ["lib"]
 
