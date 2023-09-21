@@ -153,16 +153,21 @@ func BenchmarkEVMSnailtracer(b *testing.B) {
 	}
 }
 
-//go:embed testdata/snailtracer.wasm
-var wasmBytecode []byte
+//go:embed testdata/snailtracer_o2.wasm
+var wasmBytecode_o2 []byte
+
+//go:embed testdata/snailtracer_oz.wasm
+var wasmBytecode_oz []byte
 
 func BenchmarkTinygoSnailtracer(b *testing.B) {
 	runtimes := []struct {
 		name     string
 		instance *wasmer.Instance
 	}{
-		{"wasmer/singlepass", newWasmerInstance(b, wasmBytecode, wasmer.NewConfig().UseSinglepassCompiler())},
-		{"wasmer/cranelift", newWasmerInstance(b, wasmBytecode, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wasmer/singlepass/o2", newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/singlepass/oz", newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/cranelift/o2", newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wasmer/cranelift/oz", newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseCraneliftCompiler())},
 	}
 	for _, runtime := range runtimes {
 		b.Run(runtime.name, func(b *testing.B) {
