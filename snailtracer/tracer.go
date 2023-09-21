@@ -110,10 +110,11 @@ type Scene struct {
 	triangles      []*Triangle
 }
 
-func newScene(w, h int) *Scene {
+func newScene(w, h, seed int) *Scene {
 	s := &Scene{}
 	s.width = w
 	s.height = h
+	s.seed = uint32(seed)
 	return s
 }
 

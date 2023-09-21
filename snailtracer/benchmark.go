@@ -2,8 +2,8 @@ package snailtracer
 
 import "github.com/holiman/uint256"
 
-func NewBenchmarkScene(id int) *Scene {
-	s := newScene(1024, 768)
+func NewBenchmarkScene(id int, seed int) *Scene {
+	s := newScene(1024, 768, seed)
 
 	s.id = id
 	s.camera = &Ray{

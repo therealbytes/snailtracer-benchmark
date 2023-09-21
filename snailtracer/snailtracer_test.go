@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/concrete/precompiles"
-	"github.com/ethereum/go-ethereum/concrete/wasm"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -24,24 +22,8 @@ func validResult(r, g, b uint64) bool {
 	return r == 17 && g == 17 && b == 53
 }
 
-// big.Int
-// NativeSnailtracer-8                        32          34383703 ns/op        11873171 B/op     475931 allocs/op
-// Parallel4NativeSnailtracer-8               93          12365558 ns/op        11878374 B/op     475990 allocs/op
-// EVMSnailtracer-8                            3         447541079 ns/op        41799312 B/op        701 allocs/op
-// TinygoSnailtracer/wazero-8                  4         318123902 ns/op             112 B/op          6 allocs/op
-// TinygoSnailtracer/wasmer/singlepass-8       4         261384293 ns/op             560 B/op         34 allocs/op
-// TinygoSnailtracer/wasmer/cranelift-8        7         153933651 ns/op             561 B/op         34 allocs/op
-
-// uint256.Int
-// NativeSnailtracer-8                          73          15308502 ns/op         2794699 B/op      87334 allocs/op
-// Parallel4NativeSnailtracer-8                229           5708114 ns/op         2795407 B/op      87345 allocs/op
-// EVMSnailtracer-8                              3         443557845 ns/op        41799274 B/op        700 allocs/op
-// TinygoSnailtracer/wazero-8                    7         144487708 ns/op             113 B/op          6 allocs/op
-// TinygoSnailtracer/wasmer/singlepass-8         9         123184179 ns/op             560 B/op        34 allocs/op
-// TinygoSnailtracer/wasmer/cranelift-8          16          84588197 ns/op             560 B/op        34 allocs/op
-
 func BenchmarkNativeSnailtracer(b *testing.B) {
-	s := NewBenchmarkScene(0)
+	s := NewBenchmarkScene(0, 0)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		color := NewVector(0, 0, 0)
@@ -70,7 +52,7 @@ func BenchmarkParallel4NativeSnailtracer(b *testing.B) {
 	}
 	scenes := make([]*Scene, len(tasks))
 	for i := 0; i < len(scenes); i++ {
-		scenes[i] = NewBenchmarkScene(0)
+		scenes[i] = NewBenchmarkScene(0, 0)
 	}
 
 	b.ResetTimer()
@@ -116,7 +98,7 @@ func BenchmarkEVMSnailtracer(b *testing.B) {
 		origin         = common.HexToAddress("0xc0ffee0001")
 		bytecode       = common.Hex2Bytes(string(evmBytecodeHex)[2:])
 		initInput      = common.Hex2Bytes("57a86f7d")
-		benchmarkInput = common.Hex2Bytes("30627b7c")
+		benchmarkInput = common.Hex2Bytes("351578bc0000000000000000000000000000000000000000000000000000000000000000")
 		gasLimit       = uint64(1e9)
 		txContext      = vm.TxContext{
 			Origin:   origin,
@@ -176,27 +158,54 @@ var wasmBytecode []byte
 
 func BenchmarkTinygoSnailtracer(b *testing.B) {
 	runtimes := []struct {
-		name string
-		pc   precompiles.Precompile
+		name     string
+		instance *wasmer.Instance
 	}{
-		{"wazero", wasm.NewWazeroPrecompile(wasmBytecode)},
-		{"wasmer/singlepass", wasm.NewWasmerPrecompileWithConfig(wasmBytecode, wasmer.NewConfig().UseSinglepassCompiler())},
-		{"wasmer/cranelift", wasm.NewWasmerPrecompileWithConfig(wasmBytecode, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wasmer/singlepass", newWasmerInstance(b, wasmBytecode, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/cranelift", newWasmerInstance(b, wasmBytecode, wasmer.NewConfig().UseCraneliftCompiler())},
 	}
 	for _, runtime := range runtimes {
 		b.Run(runtime.name, func(b *testing.B) {
+			run, err := runtime.instance.Exports.GetFunction("run")
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				ret, err := runtime.pc.Run(nil, nil)
+				_ret, err := run(0)
 				if err != nil {
 					b.Fatal(err)
 				}
-				cr := uint64(ret[0])
-				cg := uint64(ret[32])
-				cb := uint64(ret[64])
+				ret := _ret.(int32)
+				cr := uint64(ret >> 16 & 0xff)
+				cg := uint64(ret >> 8 & 0xff)
+				cb := uint64(ret & 0xff)
 				if !validResult(cr, cg, cb) {
 					b.Fatal("invalid result:", cr, cg, cb)
 				}
 			}
 		})
 	}
+}
+
+func newWasmerInstance(b *testing.B, code []byte, config *wasmer.Config) *wasmer.Instance {
+	engine := wasmer.NewEngineWithConfig(config)
+	store := wasmer.NewStore(engine)
+	module, err := wasmer.NewModule(store, code)
+	if err != nil {
+		b.Fatal(err)
+	}
+	wasiEnv, err := wasmer.NewWasiStateBuilder("wasi-program").Finalize()
+	if err != nil {
+		b.Fatal(err)
+	}
+	importObject, err := wasiEnv.GenerateImportObject(store, module)
+	if err != nil {
+		b.Fatal(err)
+	}
+	instance, err := wasmer.NewInstance(module, importObject)
+	if err != nil {
+		b.Fatal(err)
+	}
+	return instance
 }

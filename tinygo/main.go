@@ -1,45 +1,35 @@
 package main
 
 import (
-	"github.com/ethereum/go-ethereum/concrete/api"
-	"github.com/ethereum/go-ethereum/concrete/lib"
-	"github.com/ethereum/go-ethereum/tinygo"
 	"github.com/holiman/uint256"
 	"github.com/therealbytes/concrete-snailtrace/snailtracer"
 )
 
-type snailtracerPrecompile struct {
+var (
 	scene *snailtracer.Scene
-	lib.BlankPrecompile
-}
+)
 
-func (t *snailtracerPrecompile) Run(env api.Environment, input []byte) ([]byte, error) {
-	if t.scene == nil {
-		t.scene = snailtracer.NewBenchmarkScene(0) // Wasmer won't work unless we do this every time
+//export run
+func run(seed int32) int32 {
+	if scene == nil {
+		// Global variables behave unexpectedly in Wasmer, so we need to initialize
+		// the scene here.
+		scene = snailtracer.NewBenchmarkScene(0, int(seed))
 	}
+
 	color := snailtracer.NewVector(0, 0, 0)
-	color = color.Add(t.scene.Trace(512, 384, 8))
-	color = color.Add(t.scene.Trace(325, 540, 8))
-	color = color.Add(t.scene.Trace(600, 600, 8))
-	color = color.Add(t.scene.Trace(522, 524, 8))
+	color = color.Add(scene.Trace(512, 384, 8))
+	color = color.Add(scene.Trace(325, 540, 8))
+	color = color.Add(scene.Trace(600, 600, 8))
+	color = color.Add(scene.Trace(522, 524, 8))
 	color = color.ScaleDiv(uint256.NewInt(4))
 
-	cr := color.X.Uint64()
-	cg := color.Y.Uint64()
-	cb := color.Z.Uint64()
+	cr := color.X.Uint64() & 0xff
+	cg := color.Y.Uint64() & 0xff
+	cb := color.Z.Uint64() & 0xff
 
-	result := make([]byte, 96)
-	result[0] = byte(cr)
-	result[32] = byte(cg)
-	result[64] = byte(cb)
-
-	return result, nil
-}
-
-func init() {
-	tinygo.WasmWrap(&snailtracerPrecompile{
-		scene: snailtracer.NewBenchmarkScene(0),
-	})
+	// return int32(cr) + int32(cg), int32(cb)
+	return int32(cr<<16 + cg<<8 + cb)
 }
 
 // main is REQUIRED for TinyGo to compile to WASM

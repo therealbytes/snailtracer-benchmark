@@ -305,7 +305,11 @@ contract SnailTracer {
 
     // Benchmark sets up an ephemeral image configuration and traces a select few
     // hand picked pixels to measure EVM execution performance.
-    function Benchmark() public returns (bytes1 r, bytes1 g, bytes1 b) {
+    function Benchmark(
+        uint32 _seed
+    ) public returns (bytes1 r, bytes1 g, bytes1 b) {
+        seed = _seed;
+
         if (width == 0) {
             // Configure the scene for benchmarking
             Init();
