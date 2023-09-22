@@ -1,15 +1,11 @@
 # Snailtracer benchmark
 
-**big.Int**
+A benchmark comparing Native Go, WebAssembly TinyGo, and EVM Solidity using the [Snailtracer](https://github.com/karalabe/snailtracer) ray-tracer.
 
-![Benchmark chart](./chart-bigint.jpeg)
-
-**uint256**
-
-![Benchmark chart](./chart-uint256.jpeg)
+[Results](./results/benchmark_results.csv) (run on a Intel Core i5 2020 MacBook Pro)
 
 **Render (512x384 SPP=16)**
 
-Check out [Karalabe's repo](https://github.com/karalabe/snailtracer) for [a higher resolution render](https://raw.githubusercontent.com/karalabe/snailtracer/master/snailtracer.png).
+Check out Karalabe's repo for [a higher quality image](https://raw.githubusercontent.com/karalabe/snailtracer/master/snailtracer.png).
 
-![Benchmark chart](./render.png)
+![Ray-traced image](./render.png)
