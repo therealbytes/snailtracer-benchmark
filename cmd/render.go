@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/therealbytes/concrete-snailtrace/snailtracer"
+	"github.com/therealbytes/snailtracer-benchmark/snailtracer"
 )
 
 const (

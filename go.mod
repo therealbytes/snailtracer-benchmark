@@ -1,4 +1,4 @@
-module github.com/therealbytes/concrete-snailtrace
+module github.com/therealbytes/snailtracer-benchmark
 
 go 1.19
 
