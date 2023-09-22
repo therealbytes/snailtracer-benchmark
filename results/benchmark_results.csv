@@ -1,0 +1,8 @@
+Benchmark,Iterations,ns/op,Bytes/op,Allocs/op
+BenchmarkNativeSnailtracer-8,73,15478956,2794709,87334
+BenchmarkParallel4NativeSnailtracer-8,259,4593250,2795424,87345
+BenchmarkEVMSnailtracer-8,3,374313944,41799232,699
+BenchmarkTinygoSnailtracer/wasmer/singlepass/o2-8,9,113214057,176,12
+BenchmarkTinygoSnailtracer/wasmer/singlepass/oz-8,5,222494934,176,12
+BenchmarkTinygoSnailtracer/wasmer/cranelift/o2-8,19,60818934,176,12
+BenchmarkTinygoSnailtracer/wasmer/cranelift/oz-8,10,111973325,176,12
