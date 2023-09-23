@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/ethereum/go-ethereum v1.13.1
 	github.com/holiman/uint256 v1.2.3
+	github.com/tetratelabs/wazero v1.5.0
 	github.com/wasmerio/wasmer-go v1.0.4
 )
 

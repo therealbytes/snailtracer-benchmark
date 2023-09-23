@@ -20,7 +20,7 @@ render:
 	go run cmd/render.go
 
 benchmark:
-	cd snailtracer && go test -bench . -benchmem | tee .benchmark_output.txt
+	cd snailtracer && go test -bench . -benchmem | tee ../results/benchmark_output.txt
 	echo "Benchmark,Iterations,ns/op,Bytes/op,Allocs/op" > results/benchmark_results.csv
-	awk '/Benchmark/ { print $$1 "," $$2 "," $$3 "," $$5 "," $$7 }' benchmark_output.txt >> results/benchmark_results.csv
-	rm benchmark_output.txt
+	awk '/Benchmark/ { print $$1 "," $$2 "," $$3 "," $$5 "," $$7 }' results/benchmark_output.txt >> results/benchmark_results.csv
+	rm results/benchmark_output.txt

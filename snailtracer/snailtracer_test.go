@@ -3,10 +3,13 @@
 package snailtracer
 
 import (
+	"context"
 	_ "embed"
 	"math/big"
 	"sync"
 	"testing"
+
+	wz_api "github.com/tetratelabs/wazero/api"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -15,6 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
@@ -159,29 +164,56 @@ var wasmBytecode_o2 []byte
 //go:embed testdata/snailtracer_oz.wasm
 var wasmBytecode_oz []byte
 
+var (
+	Wasmer = "Wasmer"
+	Wazero = "Wazero"
+)
+
 func BenchmarkTinygoSnailtracer(b *testing.B) {
 	runtimes := []struct {
 		name     string
-		instance *wasmer.Instance
+		runtime  string
+		instance interface{}
 	}{
-		{"wasmer/singlepass/o2", newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseSinglepassCompiler())},
-		{"wasmer/singlepass/oz", newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseSinglepassCompiler())},
-		{"wasmer/cranelift/o2", newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseCraneliftCompiler())},
-		{"wasmer/cranelift/oz", newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wasmer/singlepass/o2", Wasmer, newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/singlepass/oz", Wasmer, newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseSinglepassCompiler())},
+		{"wasmer/cranelift/o2", Wasmer, newWasmerInstance(b, wasmBytecode_o2, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wasmer/cranelift/oz", Wasmer, newWasmerInstance(b, wasmBytecode_oz, wasmer.NewConfig().UseCraneliftCompiler())},
+		{"wazero/interpreter/o2", Wazero, newWazeroInstance(b, wasmBytecode_o2, wazero.NewRuntimeConfigInterpreter())},
+		{"wazero/interpreter/oz", Wazero, newWazeroInstance(b, wasmBytecode_oz, wazero.NewRuntimeConfigInterpreter())},
+		{"wazero/compiler/o2", Wazero, newWazeroInstance(b, wasmBytecode_o2, wazero.NewRuntimeConfigCompiler())},
+		{"wazero/compiler/oz", Wazero, newWazeroInstance(b, wasmBytecode_oz, wazero.NewRuntimeConfigCompiler())},
 	}
 	for _, runtime := range runtimes {
 		b.Run(runtime.name, func(b *testing.B) {
-			run, err := runtime.instance.Exports.GetFunction("run")
-			if err != nil {
-				b.Fatal(err)
-			}
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				_ret, err := run(0)
+			var run func(int32) int32
+			switch runtime.runtime {
+			case Wasmer:
+				_run, err := runtime.instance.(*wasmer.Instance).Exports.GetFunction("run")
 				if err != nil {
 					b.Fatal(err)
 				}
-				ret := _ret.(int32)
+				run = func(i int32) int32 {
+					_ret, err := _run(i)
+					if err != nil {
+						b.Fatal(err)
+					}
+					return _ret.(int32)
+				}
+			case Wazero:
+				_run := runtime.instance.(wz_api.Module).ExportedFunction("run")
+				run = func(i int32) int32 {
+					ctx := context.Background()
+					_ret, err := _run.Call(ctx, uint64(i))
+					if err != nil {
+						b.Fatal(err)
+					}
+					return int32(_ret[0])
+				}
+			}
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				ret := run(0)
 				cr := uint64(ret >> 16 & 0xff)
 				cg := uint64(ret >> 8 & 0xff)
 				cb := uint64(ret & 0xff)
@@ -213,4 +245,21 @@ func newWasmerInstance(b *testing.B, code []byte, config *wasmer.Config) *wasmer
 		b.Fatal(err)
 	}
 	return instance
+}
+
+func newWazeroInstance(b *testing.B, code []byte, config wazero.RuntimeConfig) wz_api.Module {
+	ctx := context.Background()
+	r := wazero.NewRuntimeWithConfig(ctx, config)
+
+	_, err := r.NewHostModuleBuilder("env").Instantiate(ctx)
+	if err != nil {
+		b.Fatal(err)
+	}
+	wasi_snapshot_preview1.MustInstantiate(ctx, r)
+	mod, err := r.Instantiate(ctx, code)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	return mod
 }

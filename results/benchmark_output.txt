@@ -1,0 +1,17 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/therealbytes/snailtracer-benchmark/snailtracer
+cpu: Intel(R) Core(TM) i5-8257U CPU @ 1.40GHz
+BenchmarkNativeSnailtracer-8            	      75	  14870718 ns/op	 2794710 B/op	   87334 allocs/op
+BenchmarkParallel4NativeSnailtracer-8   	     260	   4526680 ns/op	 2795537 B/op	   87345 allocs/op
+BenchmarkEVMSnailtracer-8               	       3	 365506517 ns/op	41799232 B/op	     699 allocs/op
+BenchmarkTinygoSnailtracer/wasmer/singlepass/o2-8         	       9	 115009724 ns/op	     176 B/op	      12 allocs/op
+BenchmarkTinygoSnailtracer/wasmer/singlepass/oz-8         	       5	 223416856 ns/op	     176 B/op	      12 allocs/op
+BenchmarkTinygoSnailtracer/wasmer/cranelift/o2-8          	      18	  61916380 ns/op	     176 B/op	      12 allocs/op
+BenchmarkTinygoSnailtracer/wasmer/cranelift/oz-8          	       9	 112028562 ns/op	     176 B/op	      12 allocs/op
+BenchmarkTinygoSnailtracer/wazero/interpreter/o2-8        	       1	5132024377 ns/op	35107000 B/op	 1448087 allocs/op
+BenchmarkTinygoSnailtracer/wazero/interpreter/oz-8        	       1	8522970000 ns/op	390389760 B/op	16251955 allocs/op
+BenchmarkTinygoSnailtracer/wazero/compiler/o2-8           	       8	 133309880 ns/op	    3504 B/op	       2 allocs/op
+BenchmarkTinygoSnailtracer/wazero/compiler/oz-8           	       4	 262094354 ns/op	    2384 B/op	       2 allocs/op
+PASS
+ok  	github.com/therealbytes/snailtracer-benchmark/snailtracer	29.548s
